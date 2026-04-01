@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+import { requireAdmin } from "@/src/lib/auth/guards";
 import { DEV_CLIENT_COOKIE, DEV_VIEW_COOKIE } from "@/src/lib/platform/dev-view-constants";
 import type { DevPlatformView } from "@/src/lib/platform/dev-view-cookies";
 import { DEFAULT_DEV_CLIENT_ID } from "@/src/lib/platform/mock-data";
@@ -15,6 +16,7 @@ const cookieBase = {
 };
 
 export async function setDevPlatformViewAction(mode: DevPlatformView) {
+  await requireAdmin();
   const jar = await cookies();
   jar.set(DEV_VIEW_COOKIE, mode, cookieBase);
   if (mode === "client" && !jar.get(DEV_CLIENT_COOKIE)?.value) {
@@ -24,6 +26,7 @@ export async function setDevPlatformViewAction(mode: DevPlatformView) {
 }
 
 export async function setDevImpersonateClientIdAction(clientId: string) {
+  await requireAdmin();
   const jar = await cookies();
   jar.set(DEV_CLIENT_COOKIE, clientId, cookieBase);
   revalidatePath("/", "layout");

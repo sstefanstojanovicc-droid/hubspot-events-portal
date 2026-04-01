@@ -2,6 +2,13 @@ import "server-only";
 
 import { getHubSpotAccessToken } from "@/src/lib/hubspot/env";
 
+function hubspotApiLog(
+  kind: "error",
+  payload: Record<string, unknown>,
+): void {
+  console.error(`[hubspot-api] ${JSON.stringify({ kind, ...payload })}`);
+}
+
 export type HubSpotJsonResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; message: string };
@@ -29,6 +36,12 @@ export async function hubspotApiGetJson<T>(
 
   if (!response.ok) {
     const body = await response.text();
+    hubspotApiLog("error", {
+      method: "GET",
+      path,
+      status: response.status,
+      responseBody: body.trim().slice(0, 4000),
+    });
     return {
       ok: false,
       status: response.status,
@@ -66,6 +79,19 @@ export async function hubspotApiSendJson<T>(
 
   if (!response.ok) {
     const body = await response.text();
+    const payloadJson =
+      options.body === undefined
+        ? undefined
+        : typeof options.body === "string"
+          ? options.body.slice(0, 4000)
+          : JSON.stringify(options.body).slice(0, 4000);
+    hubspotApiLog("error", {
+      method: options.method,
+      path,
+      status: response.status,
+      requestBody: payloadJson,
+      responseBody: body.trim().slice(0, 4000),
+    });
     return {
       ok: false,
       status: response.status,
@@ -108,6 +134,12 @@ export async function hubspotApiDelete(path: string): Promise<HubSpotJsonResult<
   }
 
   const body = await response.text();
+  hubspotApiLog("error", {
+    method: "DELETE",
+    path,
+    status: response.status,
+    responseBody: body.trim().slice(0, 4000),
+  });
   return {
     ok: false,
     status: response.status,

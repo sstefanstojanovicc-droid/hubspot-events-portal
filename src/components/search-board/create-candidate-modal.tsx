@@ -35,7 +35,7 @@ export function CreateCandidateModal({
   const btnClass =
     variant === "secondary"
       ? "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
-      : "rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700";
+      : "rounded-lg bg-hub px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover";
 
   return (
     <>
@@ -92,7 +92,7 @@ export function CreateCandidateModal({
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  className="flex-1 rounded-lg bg-hub py-2 text-sm font-semibold text-white hover:bg-hub-hover"
                 >
                   Create profile
                 </button>

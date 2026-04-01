@@ -28,9 +28,9 @@ export function ConnectHubSpotForm({ clientId, afterSuccess }: ConnectHubSpotFor
       ) : null}
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+        className="rounded-md bg-hub px-4 py-2 text-sm font-semibold text-white hover:bg-hub-hover"
       >
-        Connect HubSpot (dev)
+        Verify HubSpot connection
       </button>
       {feedback ? (
         <p className={`text-sm ${state.ok ? "text-emerald-700" : "text-rose-700"}`}>

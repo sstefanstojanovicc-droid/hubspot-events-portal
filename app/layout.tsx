@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { getDeploymentUrl } from "@/src/lib/platform/deployment-url";
 
+import { AppProviders } from "./providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,9 +20,8 @@ const metadataBase = getDeploymentUrl();
 
 export const metadata: Metadata = {
   ...(metadataBase ? { metadataBase } : {}),
-  title: "HubSpot Application Platform",
-  description:
-    "Reusable Next.js + HubSpot platform for candidate, events, and CRM-driven portals.",
+  title: "Hub Workspace",
+  description: "Client workspace and Search Board.",
 };
 
 export default function RootLayout({
@@ -34,7 +34,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50 text-slate-900">{children}</body>
+      <body className="min-h-full bg-slate-50 text-slate-900">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

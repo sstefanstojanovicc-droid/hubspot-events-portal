@@ -1,37 +1,37 @@
 import Link from "next/link";
 import { ShortlistsIndexClient } from "@/src/components/search-board/shortlists-index-client";
 import { EmptyState } from "@/src/components/search-board/primitives";
-import { getDevImpersonateClientId } from "@/src/lib/platform/dev-view-cookies";
+import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
 import {
   buildShortlistEntryCounts,
-  getSearchBoardTenantObjects,
   listShortlists,
+  resolveSearchBoardTenant,
 } from "@/src/lib/search-board/data";
 
 export default async function SearchBoardShortlistsPage() {
-  const clientId = await getDevImpersonateClientId();
-  const gate = getSearchBoardTenantObjects(clientId);
+  const clientId = await getWorkspaceClientId();
+  const gate = await resolveSearchBoardTenant(clientId);
 
   if (!gate.ok) {
     const err = gate.error;
     const msg =
       err.code === "no_token"
-        ? "Configure HUBSPOT_ACCESS_TOKEN."
-        : err.code === "no_mapping"
-          ? "Complete Search Board install first."
-          : err.code === "incomplete_mapping"
+        ? "HubSpot API token is not configured."
+        : err.code === "no_mapping" || err.code === "incomplete_mapping"
+          ? err.code === "incomplete_mapping"
             ? err.detail
-            : err.message;
+            : "One-time HubSpot setup is required for this portal."
+          : err.message;
     return (
       <EmptyState
-        title="Shortlists unavailable"
+        title="Shortlists"
         description={msg}
         action={
           <Link
             href={`/admin/clients/${clientId}/apps/search-board/install`}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-lg bg-hub px-4 py-2 text-sm font-semibold text-white hover:bg-hub-hover"
           >
-            Install
+            Setup
           </Link>
         }
       />

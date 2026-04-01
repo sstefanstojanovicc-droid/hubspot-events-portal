@@ -4,8 +4,8 @@ import { AppTile } from "@/src/components/platform/app-tile";
 import { ConnectHubSpotForm } from "@/src/components/platform/connect-hubspot-form";
 import { getClientHubSpotLinkRecord } from "@/src/lib/platform/client-connection-store";
 import {
-  getEffectiveConnectionStatus,
-  getInstalledAppsWithOverrides,
+  getEffectiveConnectionStatusAsync,
+  getInstalledAppsWithOverridesAsync,
 } from "@/src/lib/platform/effective-client";
 import { getClientById } from "@/src/lib/platform/mock-data";
 
@@ -23,17 +23,14 @@ export default async function AdminClientDetailPage({
     notFound();
   }
 
-  const installs = getInstalledAppsWithOverrides(client.id);
-  const effectiveStatus = getEffectiveConnectionStatus(client);
+  const installs = await getInstalledAppsWithOverridesAsync(client.id);
+  const effectiveStatus = await getEffectiveConnectionStatusAsync(client);
   const link = getClientHubSpotLinkRecord(client.id);
 
   return (
     <div className="space-y-6">
       <header>
-        <h2 className="text-2xl font-semibold">{client.name}</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Tenant record, HubSpot connection, and installed apps.
-        </p>
+        <h2 className="text-2xl font-semibold text-hub-bar">{client.name}</h2>
       </header>
 
       <section className="grid grid-cols-1 gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
@@ -45,10 +42,7 @@ export default async function AdminClientDetailPage({
           value={effectiveStatus.replaceAll("_", " ")}
         />
         {link ? (
-          <DetailRow
-            label="Verified token portal (dev)"
-            value={link.verifiedTokenPortalId || "—"}
-          />
+          <DetailRow label="Token portal" value={link.verifiedTokenPortalId || "—"} />
         ) : null}
       </section>
 
@@ -61,21 +55,14 @@ export default async function AdminClientDetailPage({
       ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Connect HubSpot (dev)</h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Validates <code className="rounded bg-slate-100 px-1">HUBSPOT_ACCESS_TOKEN</code> on the
-          server and checks the portal id matches this account. The token is never sent to the
-          browser.
-        </p>
+        <h3 className="text-sm font-semibold text-slate-900">HubSpot</h3>
         <div className="mt-4">
           <ConnectHubSpotForm clientId={client.id} />
         </div>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-          Installed apps
-        </h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Apps</h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {installs.map((install) => (
             <AppTile
@@ -92,18 +79,14 @@ export default async function AdminClientDetailPage({
         </div>
       </section>
 
-      <section className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-800">Search Board provisioning</h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Compare the HubSpot schema to the blueprint, run a dry-run, and capture mappings after
-          connect.
-        </p>
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-800">Search Board</h3>
         <div className="mt-3">
           <Link
             href={`/admin/clients/${client.id}/apps/search-board/install`}
-            className="inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="inline-flex rounded-md bg-hub px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover"
           >
-            Open Search Board install
+            Setup
           </Link>
         </div>
       </section>

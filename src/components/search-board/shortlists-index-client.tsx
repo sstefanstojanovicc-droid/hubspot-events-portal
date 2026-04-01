@@ -84,7 +84,7 @@ export function ShortlistsIndexClient({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Shortlist, client, role…"
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-hub focus:outline-none focus:ring-1 focus:ring-hub"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
@@ -138,13 +138,13 @@ export function ShortlistsIndexClient({
           return (
             <li
               key={s.id}
-              className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+              className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-hub-muted hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <Link
                     href={`/apps/search-board/shortlists/${s.id}`}
-                    className="text-lg font-semibold text-slate-900 group-hover:text-indigo-700"
+                    className="text-lg font-semibold text-slate-900 group-hover:text-hub-ink"
                   >
                     {name}
                   </Link>
@@ -175,7 +175,7 @@ export function ShortlistsIndexClient({
               <div className="mt-4">
                 <Link
                   href={`/apps/search-board/shortlists/${s.id}`}
-                  className="text-sm font-semibold text-indigo-700 hover:underline"
+                  className="text-sm font-semibold text-hub-ink hover:underline"
                 >
                   Open board →
                 </Link>

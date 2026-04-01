@@ -14,7 +14,7 @@ export function AppTile({ app, href, badge }: AppTileProps) {
         <h3 className="text-sm font-semibold text-slate-900">{app.name}</h3>
         <div className="flex gap-2">
           <StatusPill label={app.status} />
-          {badge ? <StatusPill label={badge} tone="indigo" /> : null}
+          {badge ? <StatusPill label={badge} tone="accent" /> : null}
         </div>
       </div>
       <p className="mt-2 text-sm text-slate-600">{app.description}</p>
@@ -31,11 +31,11 @@ function StatusPill({
   tone = "slate",
 }: {
   label: string;
-  tone?: "slate" | "indigo";
+  tone?: "slate" | "accent";
 }) {
   const className =
-    tone === "indigo"
-      ? "bg-indigo-100 text-indigo-700"
+    tone === "accent"
+      ? "bg-hub-muted text-hub-ink"
       : "bg-slate-100 text-slate-600";
 
   return (

@@ -1,33 +1,33 @@
 import Link from "next/link";
 import { CreateCandidateModal } from "@/src/components/search-board/create-candidate-modal";
 import { EmptyState, SummaryCard } from "@/src/components/search-board/primitives";
-import { getDevImpersonateClientId } from "@/src/lib/platform/dev-view-cookies";
-import { getSearchBoardTenantObjects, loadDashboardStats } from "@/src/lib/search-board/data";
+import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
+import { loadDashboardStats, resolveSearchBoardTenant } from "@/src/lib/search-board/data";
 
 export default async function SearchBoardDashboardPage() {
-  const clientId = await getDevImpersonateClientId();
-  const gate = getSearchBoardTenantObjects(clientId);
+  const clientId = await getWorkspaceClientId();
+  const gate = await resolveSearchBoardTenant(clientId);
 
   if (!gate.ok) {
     const err = gate.error;
     const msg =
       err.code === "no_token"
-        ? "Configure HUBSPOT_ACCESS_TOKEN for your environment."
-        : err.code === "no_mapping"
-          ? "Run Search Board install for this client to map HubSpot object types."
-          : err.code === "incomplete_mapping"
-            ? err.detail
+        ? "HubSpot API token is not configured on the server."
+        : err.code === "incomplete_mapping"
+          ? err.detail
+          : err.code === "no_mapping"
+            ? "One-time HubSpot setup is required. Mapping syncs automatically afterward — you should not need to repeat setup unless schemas change in HubSpot."
             : err.message;
     return (
       <EmptyState
-        title="Search Board is not ready"
+        title="Search Board"
         description={msg}
         action={
           <Link
             href={`/admin/clients/${clientId}/apps/search-board/install`}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-lg bg-hub px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover"
           >
-            Open install
+            Setup
           </Link>
         }
       />
@@ -50,11 +50,7 @@ export default async function SearchBoardDashboardPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Search Board</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Executive search workspace — shortlists, candidates, and client-facing boards backed by
-          HubSpot.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-hub-bar">Search Board</h1>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -87,7 +83,7 @@ export default async function SearchBoardDashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
             Recent shortlist activity
           </h2>
-          <Link href="/apps/search-board/shortlists" className="text-sm font-semibold text-indigo-700">
+          <Link href="/apps/search-board/shortlists" className="text-sm font-semibold text-hub-ink">
             View all
           </Link>
         </div>
@@ -102,7 +98,7 @@ export default async function SearchBoardDashboardPage() {
                 <div>
                   <Link
                     href={`/apps/search-board/shortlists/${s.id}`}
-                    className="font-medium text-slate-900 hover:text-indigo-700"
+                    className="font-medium text-slate-900 hover:text-hub-ink"
                   >
                     {String(s.properties.shortlist_name ?? "Shortlist")}
                   </Link>
@@ -120,22 +116,6 @@ export default async function SearchBoardDashboardPage() {
             ))}
           </ul>
         )}
-      </section>
-
-      <section className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-        <h2 className="text-sm font-semibold text-slate-900">Quick links</h2>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {recentShortlists.slice(0, 5).map((s) => (
-            <li key={s.id}>
-              <Link
-                href={`/apps/search-board/shortlists/${s.id}`}
-                className="inline-flex rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 shadow-sm ring-1 ring-slate-200 hover:ring-indigo-300"
-              >
-                {String(s.properties.shortlist_name ?? s.id)}
-              </Link>
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   );

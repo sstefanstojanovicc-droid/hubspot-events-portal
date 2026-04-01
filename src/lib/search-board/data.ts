@@ -2,6 +2,11 @@ import "server-only";
 
 import { getClientAppMapping } from "@/src/lib/platform/client-app-mapping-store";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
+import {
+  ensureSearchBoardMappingHydrated,
+  searchBoardRuntimeLog,
+  summarizeMappingSnippet,
+} from "@/src/lib/search-board/search-board-hydration";
 import { REVIEW_FUNNEL_STATUS_FRAGMENTS, normalizeEntryStatus } from "@/src/lib/search-board/constants";
 import {
   hubspotBatchCreateAssociationsV4,
@@ -55,6 +60,17 @@ const ENTRY_PROPS = [
   "hs_lastmodifieddate",
 ] as const;
 
+/** HubSpot custom object title when primary display is `entry_name` (see Search Board blueprint). */
+function formatShortlistEntryDisplayName(
+  rank: number,
+  candidateFullName: string,
+  shortlistName: string,
+): string {
+  const name = (candidateFullName || "Candidate").trim();
+  const sl = (shortlistName || "Shortlist").trim();
+  return `${rank} - ${name} | ${sl}`.slice(0, 512);
+}
+
 export type SearchBoardDataError =
   | { code: "no_token" }
   | { code: "no_mapping" }
@@ -100,6 +116,22 @@ export function getSearchBoardTenantObjects(clientId: string):
   };
 }
 
+/** Hydrate mapping from HubSpot schema when the in-memory row is empty (serverless cold start). */
+export async function resolveSearchBoardTenant(clientId: string): Promise<
+  ReturnType<typeof getSearchBoardTenantObjects>
+> {
+  await ensureSearchBoardMappingHydrated(clientId);
+  const t = getSearchBoardTenantObjects(clientId);
+  if (!t.ok && isHubSpotAccessTokenConfigured()) {
+    searchBoardRuntimeLog("tenant-unresolved-after-hydrate", {
+      clientId,
+      error: t.error,
+      mapping: summarizeMappingSnippet(clientId),
+    });
+  }
+  return t;
+}
+
 function rowToShortlist(r: HubSpotCrmObjectRow): ShortlistRecord {
   return { id: r.id, properties: r.properties };
 }
@@ -115,7 +147,7 @@ function rowToEntry(r: HubSpotCrmObjectRow): ShortlistEntryRecord {
 export async function listShortlists(
   clientId: string,
 ): Promise<{ ok: true; shortlists: ShortlistRecord[] } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotFetchAllObjectPages(t.tenant.shortlistTypeId, [...SHORTLIST_PROPS]);
   if (!res.ok) {
@@ -128,7 +160,7 @@ export async function getShortlistById(
   clientId: string,
   id: string,
 ): Promise<{ ok: true; shortlist: ShortlistRecord } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotGetCrmObject(t.tenant.shortlistTypeId, id, [...SHORTLIST_PROPS]);
   if (!res.ok) {
@@ -140,7 +172,7 @@ export async function getShortlistById(
 export async function listCandidates(
   clientId: string,
 ): Promise<{ ok: true; candidates: CandidateRecord[] } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotFetchAllObjectPages(t.tenant.candidateTypeId, [...CANDIDATE_PROPS]);
   if (!res.ok) {
@@ -153,7 +185,7 @@ export async function getCandidateById(
   clientId: string,
   id: string,
 ): Promise<{ ok: true; candidate: CandidateRecord } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotGetCrmObject(t.tenant.candidateTypeId, id, [...CANDIDATE_PROPS]);
   if (!res.ok) {
@@ -166,7 +198,7 @@ export async function listShortlistEntryIdsForShortlist(
   clientId: string,
   shortlistId: string,
 ): Promise<{ ok: true; entryIds: string[] } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
 
   const fromShortlist = await hubspotListAssociatedIds(
@@ -239,7 +271,7 @@ export async function loadShortlistBoardData(
     return entriesRes;
   }
 
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) {
     return t;
   }
@@ -334,7 +366,7 @@ export async function createCandidate(
   clientId: string,
   properties: Record<string, string | undefined>,
 ): Promise<{ ok: true; id: string } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotCreateCrmObject(t.tenant.candidateTypeId, properties);
   if (!res.ok) {
@@ -348,7 +380,7 @@ export async function updateCandidate(
   candidateId: string,
   properties: Record<string, string | undefined>,
 ): Promise<{ ok: true } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotPatchCrmObject(t.tenant.candidateTypeId, candidateId, properties);
   if (!res.ok) {
@@ -362,7 +394,7 @@ export async function updateShortlist(
   shortlistId: string,
   properties: Record<string, string | undefined>,
 ): Promise<{ ok: true } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotPatchCrmObject(t.tenant.shortlistTypeId, shortlistId, properties);
   if (!res.ok) {
@@ -376,7 +408,7 @@ export async function updateShortlistEntry(
   entryId: string,
   properties: Record<string, string | number | undefined>,
 ): Promise<{ ok: true } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotPatchCrmObject(t.tenant.entryTypeId, entryId, properties);
   if (!res.ok) {
@@ -397,7 +429,7 @@ export async function createShortlistEntry(
     entry_name?: string;
   },
 ): Promise<{ ok: true; entryId: string } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const tenant = t.tenant;
 
@@ -413,12 +445,29 @@ export async function createShortlistEntry(
     };
   }
 
+  let entryName = args.entry_name?.trim();
+  if (!entryName) {
+    const [slRes, candRes] = await Promise.all([
+      getShortlistById(clientId, args.shortlistId),
+      getCandidateById(clientId, args.candidateId),
+    ]);
+    const slTitle =
+      slRes.ok
+        ? String(slRes.shortlist.properties.shortlist_name ?? "").trim() || "Shortlist"
+        : "Shortlist";
+    const candTitle =
+      candRes.ok
+        ? String(candRes.candidate.properties.candidate_name ?? "").trim() || "Candidate"
+        : "Candidate";
+    entryName = formatShortlistEntryDisplayName(args.rank, candTitle, slTitle);
+  }
+
   const create = await hubspotCreateCrmObject(tenant.entryTypeId, {
     rank: args.rank,
     shortlist_status: args.shortlistStatus,
     client_feedback: args.clientFeedback,
     internal_notes: args.internalNotes,
-    entry_name: args.entry_name,
+    entry_name: entryName,
   });
   if (!create.ok) {
     return { ok: false, error: { code: "hubspot", message: create.message } };
@@ -484,7 +533,7 @@ export async function deleteShortlistEntry(
   clientId: string,
   entryId: string,
 ): Promise<{ ok: true } | { ok: false; error: SearchBoardDataError }> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) return t;
   const res = await hubspotDeleteCrmObject(t.tenant.entryTypeId, entryId);
   if (!res.ok) {
@@ -547,7 +596,15 @@ export async function saveShortlistBuilderDraft(
   }
 
   let board = await loadShortlistBoardData(clientId, sid);
-  if (!board.ok) return board;
+  if (!board.ok) {
+    searchBoardRuntimeLog("save-draft-initial-load-failed", {
+      clientId,
+      shortlistId: sid,
+      error: board.error,
+      tenant: summarizeMappingSnippet(clientId),
+    });
+    return board;
+  }
 
   for (const it of [...board.items]) {
     if (!desired.has(String(it.candidateId))) {
@@ -578,6 +635,9 @@ export async function saveShortlistBuilderDraft(
   board = await loadShortlistBoardData(clientId, sid);
   if (!board.ok) return board;
 
+  const shortlistDisplayName =
+    String(board.shortlist.properties.shortlist_name ?? "").trim() || "Shortlist";
+
   for (let i = 0; i < BUILDER_SLOT_COUNT; i++) {
     const rank = i + 1;
     const spec = slots[i];
@@ -595,7 +655,7 @@ export async function saveShortlistBuilderDraft(
       }
     }
 
-    const entry_name = `Rank ${rank} · ${candName}`.slice(0, 512);
+    const entry_name = formatShortlistEntryDisplayName(rank, candName, shortlistDisplayName);
     const d = desired.get(candId)!;
 
     if (!existing) {
@@ -608,7 +668,18 @@ export async function saveShortlistBuilderDraft(
         internalNotes: d.internalNotes.trim() || undefined,
         entry_name,
       });
-      if (!cr.ok) return cr;
+      if (!cr.ok) {
+        searchBoardRuntimeLog("save-draft-create-entry-failed", {
+          clientId,
+          shortlistId: sid,
+          rank,
+          candidateId: candId,
+          entry_name,
+          error: cr.error,
+          tenant: summarizeMappingSnippet(clientId),
+        });
+        return cr;
+      }
     } else {
       const up = await updateShortlistEntry(clientId, existing.entryId, {
         rank,
@@ -617,7 +688,16 @@ export async function saveShortlistBuilderDraft(
         internal_notes: d.internalNotes,
         entry_name,
       });
-      if (!up.ok) return up;
+      if (!up.ok) {
+        searchBoardRuntimeLog("save-draft-update-entry-failed", {
+          clientId,
+          shortlistId: sid,
+          entryId: existing.entryId,
+          error: up.error,
+          tenant: summarizeMappingSnippet(clientId),
+        });
+        return up;
+      }
     }
   }
 
@@ -635,7 +715,7 @@ export async function listCandidateShortlistMemberships(
     }
   | { ok: false; error: SearchBoardDataError }
 > {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) {
     return t;
   }
@@ -708,7 +788,7 @@ export async function listCandidateShortlistMemberships(
 export async function buildShortlistEntryCounts(
   clientId: string,
 ): Promise<Record<string, number>> {
-  const t = getSearchBoardTenantObjects(clientId);
+  const t = await resolveSearchBoardTenant(clientId);
   if (!t.ok) {
     return {};
   }
@@ -750,7 +830,7 @@ export async function loadDashboardStats(clientId: string): Promise<
     listShortlists(clientId),
     listCandidates(clientId),
     (async () => {
-      const t = getSearchBoardTenantObjects(clientId);
+      const t = await resolveSearchBoardTenant(clientId);
       if (!t.ok) return t;
       const res = await hubspotFetchAllObjectPages(t.tenant.entryTypeId, [
         "shortlist_status",

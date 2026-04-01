@@ -19,10 +19,10 @@ function InstallSubmitButton({ disabled }: { disabled: boolean }) {
       className={
         disabled || pending
           ? "cursor-not-allowed rounded-md bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-600"
-          : "rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          : "rounded-md bg-hub px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover"
       }
     >
-      {pending ? "Install in progress…" : "Run install (provision HubSpot + save mapping)"}
+      {pending ? "Running…" : "Run setup"}
     </button>
   );
 }
@@ -75,7 +75,7 @@ export function RunSearchBoardInstallForm({
             <p className="mt-2 text-xs text-rose-800">Progress before failure: {countsSummary}</p>
           ) : null}
           <details className="mt-2">
-            <summary className="cursor-pointer text-xs font-medium text-rose-900">Install log</summary>
+            <summary className="cursor-pointer text-xs font-medium text-rose-900">Log</summary>
             <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-[11px] text-rose-900">
               {state.report.log.join("\n")}
             </pre>

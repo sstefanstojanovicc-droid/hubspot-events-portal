@@ -22,6 +22,8 @@ export interface HubSpotCustomObjectSnapshot {
   objectTypeId: string;
   singularLabel: string;
   pluralLabel: string;
+  /** HubSpot record title source (e.g. entry_name vs rank). */
+  primaryDisplayProperty?: string;
   properties: Map<string, HubSpotCustomSchemaPropertySnapshot>;
   associations: HubSpotCustomSchemaAssociationSnapshot[];
 }
@@ -43,6 +45,7 @@ type HubSpotSchemaRaw = {
   /** Some HubSpot responses use this in addition to `name`. */
   fullyQualifiedName?: string;
   labels?: { singular?: string; plural?: string };
+  primaryDisplayProperty?: string;
   properties?: HubSpotPropertyRaw[];
   associations?: HubSpotAssociationRaw[];
   associationDefinitions?: HubSpotAssociationRaw[];
@@ -177,6 +180,7 @@ export async function fetchHubSpotCustomSchemaSnapshot(): Promise<HubSpotCustomS
       objectTypeId,
       singularLabel: row.labels?.singular ?? row.name,
       pluralLabel: row.labels?.plural ?? row.name,
+      primaryDisplayProperty: row.primaryDisplayProperty,
       properties: props,
       associations,
     };

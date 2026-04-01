@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { ConnectHubSpotForm } from "@/src/components/platform/connect-hubspot-form";
 import { RunSearchBoardInstallForm } from "@/src/components/platform/run-search-board-install-form";
 import { getClientAppMapping } from "@/src/lib/platform/client-app-mapping-store";
-import { getEffectiveConnectionStatus } from "@/src/lib/platform/effective-client";
+import {
+  getEffectiveConnectionStatusAsync,
+} from "@/src/lib/platform/effective-client";
+import { ensureSearchBoardMappingHydrated } from "@/src/lib/search-board/search-board-hydration";
 import { getClientById } from "@/src/lib/platform/mock-data";
 import { buildDryRunInstallPlan } from "@/src/lib/provisioning/provisioning-service";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
@@ -55,7 +58,8 @@ export default async function SearchBoardInstallPage({
   }
 
   const tokenConfigured = isHubSpotAccessTokenConfigured();
-  const platformConnected = getEffectiveConnectionStatus(client) === "connected";
+  await ensureSearchBoardMappingHydrated(client.id);
+  const platformConnected = (await getEffectiveConnectionStatusAsync(client)) === "connected";
   const plan = await buildDryRunInstallPlan(client.id, "search-board");
   const persisted = getClientAppMapping(client.id, "search_board");
 
@@ -79,47 +83,47 @@ export default async function SearchBoardInstallPage({
     <div className="space-y-6">
       <header className="space-y-2">
         <div className="text-xs text-slate-500">
-          <Link href="/admin/clients" className="text-indigo-700 hover:text-indigo-900">
+          <Link href="/admin/clients" className="text-hub-ink hover:text-hub-bar">
             Client accounts
           </Link>
           <span className="mx-2 text-slate-400">/</span>
           <Link
             href={`/admin/clients/${client.id}`}
-            className="text-indigo-700 hover:text-indigo-900"
+            className="text-hub-ink hover:text-hub-bar"
           >
             {client.name}
           </Link>
           <span className="mx-2 text-slate-400">/</span>
-          <span className="text-slate-600">Search Board install</span>
+          <span className="text-slate-600">Search Board setup</span>
         </div>
-        <h2 className="text-2xl font-semibold text-slate-900">Search Board — install</h2>
+        <h2 className="text-2xl font-semibold text-hub-bar">Search Board setup</h2>
         <p className="text-sm text-slate-600">
-          The table below is a dry-run diff (read-only). <strong>Run install</strong> provisions
-          Search Board in HubSpot (custom objects, property groups, properties, associations), then
-          refetches the schema and saves mapping keys to the platform store. Re-running is safe and
-          idempotent.
+          <strong className="text-hub-ink">One-time per portal:</strong> creates Search Board custom
+          objects in HubSpot if missing. The app keeps object and mapping data in sync when you use
+          Search Board after this — you are not expected to rerun setup unless HubSpot schemas change.
+        </p>
+        <p className="text-xs text-slate-500">
+          Tables below are read-only diffs. Use <strong>Run setup</strong> to apply changes in HubSpot.
         </p>
       </header>
 
       {notify === "hub-connected" ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          HubSpot is connected for this client. You can run install below.
+          Connected. You can run setup below.
         </p>
       ) : null}
       {notify === "install-complete" ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          HubSpot install finished successfully. Schema was refetched and platform mappings
-          updated — see <strong>Last install result</strong> below for object type IDs and counts.
+          Setup finished. See <strong>Last run</strong> for details.
         </p>
       ) : null}
 
       {!platformConnected ? (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-sm font-semibold text-amber-950">Connect this client first</h3>
+          <h3 className="text-sm font-semibold text-amber-950">Connect HubSpot first</h3>
           <p className="mt-2 text-sm text-amber-900">
-            Run <strong>Connect HubSpot (dev)</strong> on the client account page (or below) so the
-            private app token matches portal <span className="font-mono">{client.hubspotPortalId}</span>
-            .
+            Token must match portal{" "}
+            <span className="font-mono">{client.hubspotPortalId}</span>.
           </p>
           <div className="mt-4">
             <ConnectHubSpotForm clientId={client.id} afterSuccess="redirect-install" />
@@ -133,7 +137,7 @@ export default async function SearchBoardInstallPage({
       ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Install status</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Status</h3>
         <dl className="mt-3 grid grid-cols-1 gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
@@ -149,7 +153,7 @@ export default async function SearchBoardInstallPage({
           </div>
           <div>
             <dt className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-              3. HubSpot install run
+              3. Last HubSpot run
             </dt>
             <dd className="mt-1 font-medium text-slate-900">{pipeline.progress}</dd>
           </div>
@@ -384,12 +388,9 @@ export default async function SearchBoardInstallPage({
       </section>
 
       <section className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Run install</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Run setup</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Executes the live installer: creates missing HubSpot custom objects, property groups,
-          properties, and associations (idempotent), then refetches schema and saves{" "}
-          <strong>object type IDs</strong> and <strong>association mappings</strong> to the platform
-          store. Requires a matching dev connection for this portal.
+          Creates missing schemas in HubSpot (safe to repeat). Refreshes mapping used by the app.
         </p>
         <div className="mt-4">
           <RunSearchBoardInstallForm
@@ -409,7 +410,7 @@ export default async function SearchBoardInstallPage({
           {lastReport ? (
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-                Last install result
+                Last run
               </h3>
               <p className="mt-2 text-xs text-slate-600">
                 {lastReport.ok ? "Succeeded" : "Failed"} ·{" "}

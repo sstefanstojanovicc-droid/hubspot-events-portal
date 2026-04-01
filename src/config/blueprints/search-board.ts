@@ -136,7 +136,7 @@ export const searchBoardBlueprint: AppInstallBlueprint = {
       singularLabel: "Shortlist Entry",
       pluralLabel: "Shortlist Entries",
       description: "Joins a candidate to a shortlist with ranking and feedback.",
-      primaryDisplayProperty: "rank",
+      primaryDisplayProperty: "entry_name",
       propertyGroup: {
         name: "shortlist_entry_information",
         label: "Shortlist Entry Information",

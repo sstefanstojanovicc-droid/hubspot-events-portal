@@ -34,7 +34,7 @@ export function CandidateDetailClient({
   return (
     <div className="space-y-10">
       <header className="border-b border-slate-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Candidate</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-hub">Candidate</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
           {p.current_title ? (
@@ -95,7 +95,7 @@ export function CandidateDetailClient({
                   <div>
                     <Link
                       href={`/apps/search-board/shortlists/${shortlist.id}`}
-                      className="font-medium text-indigo-700 hover:underline"
+                      className="font-medium text-hub-ink hover:underline"
                     >
                       {slName}
                     </Link>
@@ -170,7 +170,7 @@ export function CandidateDetailClient({
           </label>
           <button
             type="submit"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="rounded-lg bg-hub px-4 py-2 text-sm font-semibold text-white hover:bg-hub-hover"
           >
             Save changes
           </button>

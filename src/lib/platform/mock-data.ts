@@ -13,7 +13,7 @@ export const platformUsers: PlatformUser[] = [
     id: "user-admin-1",
     name: "Platform Admin (dev)",
     email: "admin@platform.local",
-    role: "platform_admin",
+    role: "admin",
   },
   {
     id: "user-client-anicca",
@@ -123,7 +123,7 @@ export const clientAppInstalls: ClientAppInstall[] = [
 ];
 
 export function getMockCurrentPlatformAdmin() {
-  return platformUsers.find((user) => user.role === "platform_admin") ?? null;
+  return platformUsers.find((user) => user.role === "admin") ?? null;
 }
 
 export function getMockCurrentClientUser() {

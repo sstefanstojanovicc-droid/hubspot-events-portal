@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAdmin } from "@/src/lib/auth/guards";
 import { introspectHubSpotAccessToken } from "@/src/lib/hubspot/connection";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
 import { setClientHubSpotLinkRecord } from "@/src/lib/platform/client-connection-store";
@@ -14,6 +15,7 @@ export async function connectHubSpotForClientAction(
   _prev: ConnectHubSpotActionState | undefined,
   formData: FormData,
 ): Promise<ConnectHubSpotActionState> {
+  await requireAdmin();
   const clientId = String(formData.get("clientId") ?? "");
   const afterSuccess = String(formData.get("afterSuccess") ?? "");
   const client = getClientById(clientId);

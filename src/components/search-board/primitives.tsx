@@ -8,7 +8,7 @@ const statusTone: Record<string, string> = {
   Interview: "bg-emerald-50 text-emerald-900 ring-emerald-200",
   Hold: "bg-orange-50 text-orange-900 ring-orange-200",
   Rejected: "bg-rose-50 text-rose-900 ring-rose-200",
-  Hired: "bg-indigo-50 text-indigo-900 ring-indigo-200",
+  Hired: "bg-hub-muted text-hub-ink ring-hub-muted",
 };
 
 export function StatusBadge({ label }: { label: string }) {

@@ -16,6 +16,7 @@ import {
   hubspotCreatePropertyGroup,
   hubspotCreateSchemaAssociation,
   hubspotListPropertyGroups,
+  hubspotPatchCustomObjectSchemaPrimaryDisplay,
   hubspotPatchProperty,
   isHubSpotDuplicateError,
   type HubSpotSchemaCreateBody,
@@ -144,6 +145,7 @@ function provisionalLiveFromCreateResponse(
     objectTypeId: id,
     singularLabel: data.labels?.singular ?? blueprintObj.singularLabel,
     pluralLabel: data.labels?.plural ?? blueprintObj.pluralLabel,
+    primaryDisplayProperty: primary.name,
     properties: props,
     associations: [],
   };
@@ -290,6 +292,36 @@ export async function executeSearchBoardLiveInstall(): Promise<SearchBoardInstal
       } else {
         counts.schemasSkipped++;
         log.push(`Schema "${obj.schemaName}" already present (objectTypeId ${live.objectTypeId})`);
+        const desiredPrimary = obj.primaryDisplayProperty.trim();
+        const currentPrimary = live.primaryDisplayProperty?.trim() ?? "";
+        if (
+          currentPrimary !== desiredPrimary &&
+          live.properties.has(desiredPrimary)
+        ) {
+          const patch = await hubspotPatchCustomObjectSchemaPrimaryDisplay(
+            live.objectTypeId,
+            desiredPrimary,
+          );
+          if (patch.ok) {
+            log.push(
+              `PATCH primaryDisplayProperty "${obj.schemaName}": ${currentPrimary || "(unset)"} → ${desiredPrimary}`,
+            );
+            const after = await fetchHubSpotCustomSchemaSnapshot();
+            if (!after.rawError) {
+              snapshot = after;
+              const refreshed = resolveCustomObjectInSnapshot(after, {
+                schemaName: obj.schemaName,
+              });
+              if (refreshed) {
+                live = refreshed;
+              }
+            }
+          } else {
+            log.push(
+              `WARN: primaryDisplayProperty PATCH failed for ${obj.schemaName}: ${patch.message}`,
+            );
+          }
+        }
       }
 
       const primary =

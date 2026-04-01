@@ -1,4 +1,4 @@
-export type PlatformRole = "platform_admin" | "client_user";
+export type PlatformRole = "admin" | "client_admin" | "client_user";
 export type ClientConnectionStatus =
   | "connected"
   | "ready_to_connect"

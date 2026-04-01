@@ -345,7 +345,7 @@ export function ShortlistWorkspace({
       <header className="border-b border-slate-200 pb-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Shortlist</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-hub">Shortlist</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
               {clientName ? (
@@ -433,7 +433,7 @@ export function ShortlistWorkspace({
             type="button"
             onClick={saveDraft}
             disabled={!dirty || pending}
-            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-hub px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Saving…" : "Save shortlist"}
           </button>
@@ -556,7 +556,7 @@ export function ShortlistWorkspace({
                               type="button"
                               disabled={firstEmptyRank === undefined}
                               onClick={() => addCandidateToFirstEmpty(id)}
-                              className="text-xs font-semibold text-indigo-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                              className="text-xs font-semibold text-hub-ink hover:underline disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Add
                             </button>
@@ -597,7 +597,7 @@ export function ShortlistWorkspace({
                   key={rank}
                   onDragOver={onDragOverSlot}
                   onDrop={(e) => onDropSlot(e, rank)}
-                  className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 transition-colors hover:border-indigo-200"
+                  className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 transition-colors hover:border-hub-muted"
                 >
                   <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
                     <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -632,7 +632,7 @@ export function ShortlistWorkspace({
                         <div>
                           <Link
                             href={`/apps/search-board/candidates/${cell.candidateId}`}
-                            className="font-semibold text-indigo-800 hover:underline"
+                            className="font-semibold text-hub-ink hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {displayName}
@@ -661,11 +661,7 @@ export function ShortlistWorkspace({
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6">
-        <h2 className="text-sm font-semibold text-slate-900">Shortlist actions</h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Internal notes are stored on the shortlist record in HubSpot (add the property via install if
-          missing).
-        </p>
+        <h2 className="text-sm font-semibold text-slate-900">Shortlist</h2>
         <ShortlistNotesAndSendForm
           clientId={clientId}
           shortlistId={shortlistId}
@@ -802,7 +798,7 @@ function ShortlistNotesAndSendForm({
         <input type="hidden" name="shortlistId" value={shortlistId} />
         <button
           type="submit"
-          className="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+          className="rounded-lg bg-hub px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-hub-hover"
         >
           Send shortlist to client
         </button>
@@ -900,7 +896,7 @@ function DraftEntryEditModal({
               onClick={() =>
                 onApply({ shortlistStatus, clientFeedback, internalNotes })
               }
-              className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-semibold text-white"
+              className="flex-1 rounded-lg bg-hub py-2 text-sm font-semibold text-white"
             >
               Apply
             </button>

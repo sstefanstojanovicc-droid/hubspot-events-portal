@@ -15,12 +15,13 @@ export function DevViewSwitcher({ mode, clientLabel }: DevViewSwitcherProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-slate-300">Switch view:</span>
       <button
         type="button"
         disabled={isPending || mode === "admin"}
         onClick={() => startTransition(() => setDevPlatformViewAction("admin"))}
-        className="rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white hover:bg-white/20 disabled:opacity-50"
+        className={`rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-50 ${
+          mode === "admin" ? "bg-hub text-white" : "bg-white/10 text-white hover:bg-white/20"
+        }`}
       >
         Admin
       </button>
@@ -28,8 +29,10 @@ export function DevViewSwitcher({ mode, clientLabel }: DevViewSwitcherProps) {
         type="button"
         disabled={isPending || mode === "client"}
         onClick={() => startTransition(() => setDevPlatformViewAction("client"))}
-        className="rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white hover:bg-white/20 disabled:opacity-50"
-        title={clientLabel ? `Impersonate ${clientLabel}` : undefined}
+        className={`rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-50 ${
+          mode === "client" ? "bg-hub text-white" : "bg-white/10 text-white hover:bg-white/20"
+        }`}
+        title={clientLabel ?? undefined}
       >
         Client
       </button>

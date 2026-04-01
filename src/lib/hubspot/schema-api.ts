@@ -45,6 +45,29 @@ export type HubSpotSchemaCreateResult = {
   labels?: { singular?: string; plural?: string };
 };
 
+const SCHEMA_BY_ID_PREFIXES = ["/crm/v3/schemas", "/crm-object-schemas/v3/schemas"];
+
+/** Switch which property HubSpot uses as the custom object record title (e.g. rank → entry_name). */
+export async function hubspotPatchCustomObjectSchemaPrimaryDisplay(
+  objectTypeId: string,
+  primaryDisplayProperty: string,
+): Promise<HubSpotJsonResult<unknown>> {
+  const encoded = encodeURIComponent(objectTypeId);
+  for (const prefix of SCHEMA_BY_ID_PREFIXES) {
+    const res = await hubspotApiSendJson(`${prefix}/${encoded}`, {
+      method: "PATCH",
+      body: { primaryDisplayProperty },
+    });
+    if (res.ok) {
+      return res;
+    }
+    if (res.status !== 404) {
+      return res;
+    }
+  }
+  return { ok: false, status: 404, message: "Schema primary display PATCH failed on all paths." };
+}
+
 export async function hubspotCreateCustomObjectSchema(
   body: HubSpotSchemaCreateBody,
 ): Promise<HubSpotJsonResult<HubSpotSchemaCreateResult>> {

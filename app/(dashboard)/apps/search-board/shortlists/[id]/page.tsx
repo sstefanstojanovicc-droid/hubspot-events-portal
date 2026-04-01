@@ -2,11 +2,11 @@ import Link from "next/link";
 
 import { ShortlistWorkspace } from "@/src/components/search-board/shortlist-workspace";
 import { EmptyState } from "@/src/components/search-board/primitives";
-import { getDevImpersonateClientId } from "@/src/lib/platform/dev-view-cookies";
+import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
 import {
-  getSearchBoardTenantObjects,
   listCandidates,
   loadShortlistBoardData,
+  resolveSearchBoardTenant,
 } from "@/src/lib/search-board/data";
 
 type PageProps = {
@@ -15,29 +15,29 @@ type PageProps = {
 
 export default async function ShortlistDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const clientId = await getDevImpersonateClientId();
-  const gate = getSearchBoardTenantObjects(clientId);
+  const clientId = await getWorkspaceClientId();
+  const gate = await resolveSearchBoardTenant(clientId);
 
   if (!gate.ok) {
     const err = gate.error;
     const msg =
       err.code === "no_token"
-        ? "Configure HUBSPOT_ACCESS_TOKEN."
-        : err.code === "no_mapping"
-          ? "Complete Search Board install first."
-          : err.code === "incomplete_mapping"
+        ? "HubSpot API token is not configured."
+        : err.code === "no_mapping" || err.code === "incomplete_mapping"
+          ? err.code === "incomplete_mapping"
             ? err.detail
-            : err.message;
+            : "One-time HubSpot setup is required for this portal."
+          : err.message;
     return (
       <EmptyState
-        title="Shortlist unavailable"
+        title="Shortlist"
         description={msg}
         action={
           <Link
             href={`/admin/clients/${clientId}/apps/search-board/install`}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-lg bg-hub px-4 py-2 text-sm font-semibold text-white hover:bg-hub-hover"
           >
-            Install
+            Setup
           </Link>
         }
       />
@@ -72,7 +72,7 @@ export default async function ShortlistDetailPage({ params }: PageProps) {
   return (
     <div>
       <nav className="mb-6 text-sm">
-        <Link href="/apps/search-board/shortlists" className="font-medium text-indigo-700 hover:text-indigo-900">
+        <Link href="/apps/search-board/shortlists" className="font-medium text-hub-ink hover:text-hub-bar">
           ← Shortlists
         </Link>
       </nav>

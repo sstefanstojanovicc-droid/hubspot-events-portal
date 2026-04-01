@@ -19,7 +19,7 @@ export function RecordList({ title, records, selectedId }: RecordListProps) {
           return (
             <li
               key={record.id}
-              className={`px-4 py-3 ${active ? "bg-indigo-50" : "bg-white"}`}
+              className={`px-4 py-3 ${active ? "bg-hub-muted" : "bg-white"}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

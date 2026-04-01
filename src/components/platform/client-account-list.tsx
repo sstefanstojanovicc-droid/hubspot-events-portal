@@ -25,7 +25,7 @@ export function ClientAccountList({ clients }: ClientAccountListProps) {
               <td className="px-4 py-3">
                 <Link
                   href={`/admin/clients/${client.id}`}
-                  className="font-medium text-indigo-700 hover:text-indigo-900"
+                  className="font-medium text-hub-ink hover:text-hub-bar"
                 >
                   {client.name}
                 </Link>

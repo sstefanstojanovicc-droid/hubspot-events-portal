@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertClientAccountAccess, requireSession } from "@/src/lib/auth/guards";
 import {
   createCandidate,
   createShortlistEntry,
@@ -17,6 +18,11 @@ function pick(
   key: string,
 ): string {
   return String(formData.get(key) ?? "").trim();
+}
+
+async function guardClient(pickClientId: string) {
+  const session = await requireSession();
+  assertClientAccountAccess(session, pickClientId);
 }
 
 export type SearchBoardActionState = { ok: boolean; message: string };
@@ -79,6 +85,8 @@ export async function updateShortlistEntryAction(
     return { ok: false, message: "Missing entry context." };
   }
 
+  await guardClient(clientId);
+
   const props: Record<string, string | number | undefined> = {};
   if (rankRaw !== "") {
     const n = Number(rankRaw);
@@ -113,6 +121,8 @@ export async function updateShortlistAction(
     return { ok: false, message: "Missing shortlist." };
   }
 
+  await guardClient(clientId);
+
   const status = pick(formData, "status") || undefined;
   const portalLink = pick(formData, "portal_link") || undefined;
   const internalNotes = pick(formData, "internal_notes") || undefined;
@@ -145,6 +155,8 @@ export async function saveShortlistDraftAction(
   if (!clientId || !shortlistId || !draftJson) {
     return { ok: false, message: "Missing shortlist or draft payload." };
   }
+
+  await guardClient(clientId);
 
   let slots: (ShortlistDraftSlotWire | null)[];
   try {
@@ -180,6 +192,8 @@ export async function sendShortlistToClientAction(
     return { ok: false, message: "Missing shortlist." };
   }
 
+  await guardClient(clientId);
+
   const res = await updateShortlist(clientId, shortlistId, { status: "Sent to client" });
   if (!res.ok) {
     return {
@@ -202,6 +216,8 @@ export async function createCandidateAction(
   if (!clientId || !candidate_name) {
     return { ok: false, message: "Name is required." };
   }
+
+  await guardClient(clientId);
 
   const res = await createCandidate(clientId, {
     candidate_name,
@@ -234,6 +250,8 @@ export async function updateCandidateAction(
   if (!clientId || !candidateId) {
     return { ok: false, message: "Missing candidate." };
   }
+
+  await guardClient(clientId);
 
   const res = await updateCandidate(clientId, candidateId, {
     candidate_name: pick(formData, "candidate_name") || undefined,
