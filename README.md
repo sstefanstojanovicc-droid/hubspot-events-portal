@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HubSpot Application Platform
+
+Reusable Next.js + TypeScript + Tailwind scaffold for building multiple HubSpot-driven products, including candidate shortlist portals, event management portals, and custom calendar/data tools.
+
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Config-driven module architecture
+
+## Platform Design Goals
+
+- Treat HubSpot as source of truth (standard objects + custom objects)
+- Keep UI generic: list, detail panel, and filter bar are reusable primitives
+- Keep rendering config-driven per portal/module
+- Support properties and associations in a shared data model
+- Make feature modules easy to add without rewriting the core
+
+## Folder Structure
+
+```text
+app/
+  (dashboard)/
+    dashboard/page.tsx          # dashboard shell landing page
+    objects/[objectType]/page.tsx # generic object module page
+src/
+  components/
+    dashboard/                  # dashboard shell and navigation
+    platform/                   # reusable list/detail/filter components
+  config/
+    portals/                    # portal-level object module configs
+    portal-registry.ts          # central registry lookup
+  lib/
+    hubspot/                    # API client layer (placeholder + mock data)
+    platform/                   # object loading + mapping logic
+  types/
+    hubspot.ts                  # canonical HubSpot domain types
+    platform.ts                 # config + UI model types
+```
+
+## Candidate Portal Example
+
+`src/config/portals/candidate.ts` includes a starter module for candidate records with fields from discovery:
+
+- name
+- current title
+- written summary
+- location
+- gender
+
+This is a generic object module and can be duplicated for events, calendars, or other CRM-backed flows.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `http://localhost:3000/dashboard`
+- `http://localhost:3000/objects/2-39167811`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Next Implementation Steps
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Replace mock records in `src/lib/hubspot/client.ts` with authenticated HubSpot API calls.
+2. Add server actions/API routes for shortlist creation and secure-share links.
+3. Add module configs for event objects, calendar views, and additional custom objects.
+4. Implement role-aware auth for internal consultant and external client experiences.
