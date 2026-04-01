@@ -3,9 +3,38 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { NextResponse } from "next/server";
 
+import {
+  disabledAuthSession,
+  isAuthDisabled,
+} from "@/src/lib/auth/auth-disabled";
+import {
+  isGoogleOAuthConfigured,
+  logAuthEnvSummaryOnce,
+  resolveAuthSecret,
+} from "@/src/lib/auth/auth-env";
 import { prisma } from "@/src/lib/prisma";
 import { DEV_VIEW_COOKIE } from "@/src/lib/platform/dev-view-constants";
 import type { AppUserRole, AppUserStatus } from "@/src/types/auth";
+
+logAuthEnvSummaryOnce();
+
+const authSecret = resolveAuthSecret();
+
+if (process.env.NODE_ENV === "production" && !isGoogleOAuthConfigured()) {
+  console.error(
+    "[auth] Google OAuth will not work until AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET are set.",
+  );
+}
+
+const providers = isGoogleOAuthConfigured()
+  ? [
+      Google({
+        clientId: process.env.AUTH_GOOGLE_ID!,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+        allowDangerousEmailAccountLinking: true,
+      }),
+    ]
+  : [];
 
 function normalizeEmail(e: string | null | undefined) {
   return e?.trim().toLowerCase() ?? "";
@@ -15,18 +44,22 @@ function isAdminRoleStr(role: string): boolean {
   return role === "admin" || role === "client_admin";
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   adapter: PrismaAdapter(prisma),
+  secret: authSecret,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: { signIn: "/auth/signin" },
   trustHost: true,
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID ?? "",
-      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+  debug: process.env.NODE_ENV === "development",
+  logger: {
+    error(error) {
+      const err = error as Error & { type?: string };
+      const type =
+        typeof err?.type === "string" ? err.type : err?.name ?? "Error";
+      console.error(`[auth] ${type}:`, err?.message ?? error);
+    },
+  },
+  providers,
   callbacks: {
     authorized({ request, auth: session }) {
       const path = request.nextUrl.pathname;
@@ -147,3 +180,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const handlers = nextAuth.handlers;
+export const signIn = nextAuth.signIn;
+export const signOut = nextAuth.signOut;
+
+/** Use in middleware.ts when login is enabled. */
+export const authMiddleware = nextAuth.auth;
+
+export const auth = (async (...args: unknown[]) => {
+  if (isAuthDisabled() && args.length === 0) {
+    return disabledAuthSession();
+  }
+  return (
+    nextAuth.auth as (...a: unknown[]) => ReturnType<typeof nextAuth.auth>
+  )(...args);
+}) as typeof nextAuth.auth;

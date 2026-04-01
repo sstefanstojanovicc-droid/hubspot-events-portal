@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { SignOutButton } from "@/src/components/auth/sign-out-button";
+import { isAuthDisabled } from "@/src/lib/auth/auth-disabled";
 import { DevViewSwitcher } from "@/src/components/dashboard/dev-view-switcher";
 import { isAdminRole } from "@/src/lib/auth/guards";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
@@ -65,7 +66,7 @@ export async function DashboardShell({ children }: DashboardShellProps) {
             {showDevSwitcher ? (
               <DevViewSwitcher mode={mode} clientLabel={workspaceClient?.name} />
             ) : null}
-            <SignOutButton />
+            {!isAuthDisabled() ? <SignOutButton /> : null}
           </div>
         </div>
       </div>
