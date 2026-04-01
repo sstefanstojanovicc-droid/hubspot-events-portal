@@ -112,3 +112,27 @@ npm run dev
 - [x] Relative redirects; deployment-aware `metadataBase` via `VERCEL_URL` / `APP_URL`.  
 - [ ] **You** add `HUBSPOT_ACCESS_TOKEN` (and optional `APP_URL`) in Vercel — placeholders only in `.env.example`.  
 - [ ] **You** accept in-memory mapping limitations or plan a DB migration later.
+
+## Publishing to GitHub
+
+This repo is ready to push. **Do not commit `.env.local`** (it stays ignored); use **`.env.example`** as the template.
+
+1. On [GitHub](https://github.com/new), create a **new repository** (empty, no README required, or add a README and merge later).
+2. In your project directory:
+
+```bash
+git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
+git branch -M main
+git push -u origin main
+```
+
+3. If GitHub shows “repository not empty”, use the commands GitHub suggests after you add the remote (sometimes `git pull origin main --allow-unrelated-histories` then push).
+
+SSH example:
+
+```bash
+git remote add origin git@github.com:YOUR_USER/YOUR_REPO.git
+git push -u origin main
+```
+
+**Optional:** Install [GitHub CLI](https://cli.github.com/) and run `gh auth login` then `gh repo create hubspot-events-portal --private --source=. --push`.
