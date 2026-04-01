@@ -69,3 +69,4 @@ Open:
 2. Add server actions/API routes for shortlist creation and secure-share links.
 3. Add module configs for event objects, calendar views, and additional custom objects.
 4. Implement role-aware auth for internal consultant and external client experiences.
+# hubspot-events-portal
