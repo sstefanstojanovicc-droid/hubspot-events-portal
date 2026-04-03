@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  /// Vercel / AWS-style Linux (OpenSSL 3) — avoids engine mismatch on deploy.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
