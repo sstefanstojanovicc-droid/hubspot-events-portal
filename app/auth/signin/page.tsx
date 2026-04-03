@@ -47,10 +47,12 @@ export default async function SignInPage({ searchParams }: PageProps) {
               <>
                 <BypassLoginButton href={callbackUrl} />
                 <p className="text-center text-xs text-slate-500">
-                  Testing mode — no password or Google. Turn off{" "}
-                  <code className="rounded bg-slate-100 px-1">OPEN_APP_LOGIN</code> /{" "}
-                  <code className="rounded bg-slate-100 px-1">AUTH_DISABLED</code> on
-                  Vercel when you enable real OAuth.
+                  Demo mode — you are redirected to the app automatically; this screen is only shown if
+                  you open <code className="rounded bg-slate-100 px-1">/auth/signin</code> directly before
+                  middleware runs. Turn off{" "}
+                  <code className="rounded bg-slate-100 px-1">DEMO_MODE</code>,{" "}
+                  <code className="rounded bg-slate-100 px-1">OPEN_APP_LOGIN</code>, or{" "}
+                  <code className="rounded bg-slate-100 px-1">AUTH_DISABLED</code> when you enable real OAuth.
                 </p>
               </>
             ) : googleReady ? (

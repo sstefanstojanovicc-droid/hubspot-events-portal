@@ -1,10 +1,9 @@
-import { auth } from "@/auth";
 import { SignOutButton } from "@/src/components/auth/sign-out-button";
 import { AdminPlatformSidebar } from "@/src/components/dashboard/admin-platform-sidebar";
 import { CollapsibleWorkspaceShell } from "@/src/components/dashboard/collapsible-workspace-shell";
 import { isAuthDisabled } from "@/src/lib/auth/auth-disabled";
 import { DevViewSwitcher } from "@/src/components/dashboard/dev-view-switcher";
-import { isAdminRole } from "@/src/lib/auth/guards";
+import { isAdminRole, requireSession } from "@/src/lib/auth/guards";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
 import {
   BRANDING_APP_NAME,
@@ -23,7 +22,7 @@ interface DashboardShellProps {
 }
 
 export async function DashboardShell({ children }: DashboardShellProps) {
-  const session = (await auth())!;
+  const session = await requireSession();
   const workspaceClientId = await getWorkspaceClientId();
   const workspaceClient = await getClientAccountById(workspaceClientId);
   const logoSrc = await getSidebarLogoSrc();

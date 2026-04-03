@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { isAuthDisabled } from "@/src/lib/auth/auth-disabled";
 import {
   DEV_CLIENT_COOKIE,
 } from "@/src/lib/platform/dev-view-constants";
@@ -18,6 +19,10 @@ import { isAdminRole } from "@/src/lib/auth/guards";
 export async function getWorkspaceClientId(): Promise<string> {
   const session = await auth();
   if (!session?.user?.id) {
+    if (isAuthDisabled()) {
+      const jar = await cookies();
+      return jar.get(DEV_CLIENT_COOKIE)?.value ?? DEFAULT_DEV_CLIENT_ID;
+    }
     redirect("/auth/signin");
   }
 

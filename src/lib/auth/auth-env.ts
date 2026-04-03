@@ -32,6 +32,20 @@ export function isNextProductionBuild(): boolean {
 const PRODUCTION_BUILD_AUTH_SECRET_PLACEHOLDER =
   "build-time-only-placeholder-auth-secret-min-40-chars-x";
 
+function envTruthy(name: string): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  return v === "true" || v === "1";
+}
+
+/** True when app runs open / without real OAuth (Vercel demo). */
+function isAuthBypassEnv(): boolean {
+  return (
+    envTruthy("AUTH_DISABLED") ||
+    envTruthy("OPEN_APP_LOGIN") ||
+    envTruthy("DEMO_MODE")
+  );
+}
+
 let loggedEnvSummary = false;
 
 export function resolveAuthSecret(): string {
@@ -46,6 +60,12 @@ export function resolveAuthSecret(): string {
       if (isNextProductionBuild()) {
         console.warn(
           "[auth] AUTH_SECRET is shorter than 32 characters; use openssl rand -base64 32 for production runtime.",
+        );
+        return fromEnv;
+      }
+      if (isAuthBypassEnv()) {
+        console.warn(
+          "[auth] AUTH_SECRET is shorter than 32 characters; allowed while DEMO_MODE / AUTH_DISABLED / OPEN_APP_LOGIN is set.",
         );
         return fromEnv;
       }
@@ -66,6 +86,12 @@ export function resolveAuthSecret(): string {
     if (isNextProductionBuild()) {
       console.warn(
         "[auth] AUTH_SECRET missing during next build. It must be set for production runtime (Vercel → Environment Variables).",
+      );
+      return PRODUCTION_BUILD_AUTH_SECRET_PLACEHOLDER;
+    }
+    if (isAuthBypassEnv()) {
+      console.warn(
+        "[auth] AUTH_SECRET missing; using internal demo placeholder because AUTH_DISABLED, OPEN_APP_LOGIN, or DEMO_MODE is set. Set AUTH_SECRET before enabling real OAuth.",
       );
       return PRODUCTION_BUILD_AUTH_SECRET_PLACEHOLDER;
     }

@@ -14,13 +14,15 @@ function envTruthy(name: string): boolean {
  * When enabled, middleware skips Auth.js and `auth()` returns a fixed admin session
  * so the app works without Google OAuth.
  *
- * - Explicit: AUTH_DISABLED=true or OPEN_APP_LOGIN=true
+ * - Explicit: AUTH_DISABLED=true or OPEN_APP_LOGIN=true or DEMO_MODE=true
  * - Implicit (Vercel): production runtime, Google OAuth env not set — open app until you add AUTH_GOOGLE_*.
  * - Lock the app: set both Google vars; optional REQUIRE_GOOGLE_AUTH=true disables implicit bypass
  *   if you ever need Google keys present but not ready for gatekeeping.
  */
 export function isAuthDisabled(): boolean {
-  if (envTruthy("AUTH_DISABLED") || envTruthy("OPEN_APP_LOGIN")) return true;
+  if (envTruthy("AUTH_DISABLED") || envTruthy("OPEN_APP_LOGIN") || envTruthy("DEMO_MODE")) {
+    return true;
+  }
   if (envTruthy("REQUIRE_GOOGLE_AUTH")) return false;
   if (
     process.env.NODE_ENV === "production" &&

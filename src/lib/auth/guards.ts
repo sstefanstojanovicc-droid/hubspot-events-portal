@@ -4,10 +4,17 @@ import { auth } from "@/auth";
 import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
 
+import {
+  disabledAuthSession,
+  isAuthDisabled,
+} from "@/src/lib/auth/auth-disabled";
 import type { AppUserRole } from "@/src/types/auth";
 
 export async function requireSession(): Promise<Session> {
   const session = await auth();
+  if (!session?.user?.id && isAuthDisabled()) {
+    return disabledAuthSession();
+  }
   if (!session?.user?.id) {
     redirect("/auth/signin");
   }

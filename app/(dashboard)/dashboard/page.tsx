@@ -1,15 +1,15 @@
 import Link from "next/link";
 
-import { auth } from "@/auth";
 import { AddClientAccountForm } from "@/src/components/admin/add-client-account-form";
 import { AdminClientsOverviewTable } from "@/src/components/admin/admin-clients-overview-table";
+import { requireSession } from "@/src/lib/auth/guards";
 import { hubspotClient } from "@/src/lib/hubspot/client";
 import { buildAdminClientsOverview } from "@/src/lib/platform/admin-clients-overview";
 import { getClientAccountById, listClientAccounts } from "@/src/lib/platform/client-accounts-repo";
 import { appDefinitions } from "@/src/lib/platform/mock-data";
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await requireSession();
   const status = hubspotClient.getStatus();
   const clients = await listClientAccounts();
   const first = clients[0];

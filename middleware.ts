@@ -8,6 +8,15 @@ const runAuthMiddleware = authMiddleware as unknown as NextMiddleware;
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (isAuthDisabled()) {
+    const url = req.nextUrl;
+    if (url.pathname === "/auth/signin" || url.pathname.startsWith("/auth/signin/")) {
+      const cb = url.searchParams.get("callbackUrl");
+      let target = "/dashboard";
+      if (cb?.startsWith("/") && !cb.startsWith("//")) {
+        target = cb.split("?")[0] || "/dashboard";
+      }
+      return NextResponse.redirect(new URL(target, url));
+    }
     return NextResponse.next();
   }
   return runAuthMiddleware(req, event);
