@@ -1,8 +1,34 @@
 /**
  * Vercel / CI build entry: avoids shell-specific env (cross-env) and fails fast with a clear message
  * when DATABASE_URL is missing (common Prisma error on Vercel).
+ *
+ * Pipeline: prisma generate → prisma migrate deploy → next build
+ * (intentionally NO prisma db seed — run `npm run db:seed` manually when needed.)
  */
 const { execSync } = require("node:child_process");
+
+function resolveGitSha() {
+  const v = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
+  if (v) return v;
+  const g = process.env.GITHUB_SHA?.trim();
+  if (g) return g;
+  try {
+    return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
+const sha = resolveGitSha();
+const ref =
+  process.env.VERCEL_GIT_COMMIT_REF?.trim() ||
+  process.env.VERCEL_GIT_BRANCH?.trim() ||
+  process.env.GITHUB_REF_NAME?.trim() ||
+  "(unknown)";
+
+console.log(
+  `[vercel-build] pipeline=no-seed prisma=generate+migrate next=build sha=${sha ?? "unknown"} ref=${ref}`,
+);
 
 const dbUrl = process.env.DATABASE_URL?.trim();
 if (!dbUrl) {
@@ -31,7 +57,4 @@ function run(cmd, envExtra = {}) {
 
 run("npx prisma generate");
 run("npx prisma migrate deploy");
-if (process.env.SKIP_DB_SEED !== "true" && process.env.SKIP_DB_SEED !== "1") {
-  run("npx prisma db seed");
-}
 run("npx next build", { NEXT_PHASE: "phase-production-build" });
