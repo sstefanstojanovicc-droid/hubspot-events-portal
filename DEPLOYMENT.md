@@ -41,8 +41,9 @@ Replacing these with a database is **out of scope** for this deployment guide; t
 
 ### Storage / DB / platform mapping
 
-- **No database env vars** yet.
-- Mapping and install state are **in-memory** — see limitations above.
+- **`DATABASE_URL`** (required): **PostgreSQL** connection string. The app uses Prisma with `postgresql` — **not** SQLite on Vercel. Use [Neon](https://neon.tech), [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres), or Supabase. Add the variable to **Production** (and Preview if needed) in Vercel → Settings → Environment Variables.
+- **Build**: `npm run build` runs `prisma migrate deploy` then `prisma db seed` against that database (migrations live in `prisma/migrations/`).
+- Mapping and install state for Search Board are still **in-memory** on the server — see limitations above.
 
 ### Other / secrets
 

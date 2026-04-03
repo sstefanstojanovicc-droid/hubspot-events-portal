@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && cross-env NEXT_PHASE=phase-production-build next build",
+    "build": "prisma generate && prisma migrate deploy && prisma db seed && cross-env NEXT_PHASE=phase-production-build next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -24,6 +24,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
+    "tsx": "^4.21.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -36,7 +37,6 @@
     "eslint-config-next": "16.2.2",
     "prisma": "5.22.0",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
