@@ -14,24 +14,32 @@ export async function requireSession(): Promise<Session> {
   return session;
 }
 
+/** Legacy name: platform operators only (not tenant `client_admin`). */
 export async function requireAdmin(): Promise<Session> {
+  return requirePlatformAdmin();
+}
+
+/** Full platform access: manage all clients, branding, installs, library. */
+export async function requirePlatformAdmin(): Promise<Session> {
   const session = await requireSession();
-  const role = session.user.role;
-  if (role !== "admin" && role !== "client_admin") {
-    redirect("/portal");
+  if (session.user.role !== "admin") {
+    redirect("/dashboard");
   }
   return session;
 }
 
 export function assertClientAccountAccess(session: Session, clientAccountId: string): void {
   const role = session.user.role as AppUserRole;
-  if (role === "admin" || role === "client_admin") {
+  if (role === "admin") {
     return;
   }
-  if (role === "client_user" && session.user.clientAccountId === clientAccountId) {
+  if (
+    (role === "client_admin" || role === "client_user") &&
+    session.user.clientAccountId === clientAccountId
+  ) {
     return;
   }
-  redirect("/portal");
+  redirect("/dashboard");
 }
 
 export function isAdminRole(role: AppUserRole): boolean {

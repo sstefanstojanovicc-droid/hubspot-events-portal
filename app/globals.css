@@ -23,3 +23,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+
+/* HubSpot AI builder — Mermaid export sizing */
+.implementation-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

@@ -18,7 +18,11 @@ export interface ClientAccount {
   name: string;
   slug: string;
   hubspotPortalId: string;
+  websiteUrl: string;
+  primaryContactsJson: string;
   connectionStatus: ClientConnectionStatus;
+  createdAt: Date;
+  lastHubspotSyncAt: Date | null;
 }
 
 export interface AppDefinition {
@@ -28,6 +32,8 @@ export interface AppDefinition {
   description: string;
   status: "ready" | "planned";
   route: string;
+  /** When set, client sidebar links to `/clients/[slug]/…` instead of `route`. */
+  clientWorkspacePath?: string;
   audience: "client" | "admin" | "both";
 }
 

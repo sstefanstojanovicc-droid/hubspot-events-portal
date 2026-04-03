@@ -6,6 +6,32 @@
 const DEV_AUTH_SECRET_PLACEHOLDER =
   "local-dev-only-do-not-use-in-production-min-32-chars!!";
 
+/**
+ * True while a production build is running (compile + "Collecting page data", etc.).
+ * Vercel often does not set `NEXT_PHASE` during page-data collection, but `npm run build`
+ * sets `npm_lifecycle_event=build`, so we treat that as build-time too.
+ */
+export function isNextProductionBuild(): boolean {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return true;
+  }
+  if (process.env.npm_lifecycle_event === "build") {
+    return true;
+  }
+  const script = process.env.npm_lifecycle_script ?? "";
+  if (/\bnext\s+build\b/.test(script)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Placeholder so `next build` can complete when secrets are runtime-only on the host.
+ * Never use for real sessions — real AUTH_SECRET is required at runtime.
+ */
+const PRODUCTION_BUILD_AUTH_SECRET_PLACEHOLDER =
+  "build-time-only-placeholder-auth-secret-min-40-chars-x";
+
 let loggedEnvSummary = false;
 
 export function resolveAuthSecret(): string {
@@ -17,6 +43,12 @@ export function resolveAuthSecret(): string {
 
   if (fromEnv.length > 0) {
     if (fromEnv.length < 32 && process.env.NODE_ENV === "production") {
+      if (isNextProductionBuild()) {
+        console.warn(
+          "[auth] AUTH_SECRET is shorter than 32 characters; use openssl rand -base64 32 for production runtime.",
+        );
+        return fromEnv;
+      }
       console.error(
         "[auth] AUTH_SECRET must be at least 32 characters in production (use openssl rand -base64 32).",
       );
@@ -31,6 +63,12 @@ export function resolveAuthSecret(): string {
   }
 
   if (process.env.NODE_ENV === "production") {
+    if (isNextProductionBuild()) {
+      console.warn(
+        "[auth] AUTH_SECRET missing during next build. It must be set for production runtime (Vercel → Environment Variables).",
+      );
+      return PRODUCTION_BUILD_AUTH_SECRET_PLACEHOLDER;
+    }
     console.error(
       "[auth] Missing AUTH_SECRET (or NEXTAUTH_SECRET). Set a strong secret in production.",
     );

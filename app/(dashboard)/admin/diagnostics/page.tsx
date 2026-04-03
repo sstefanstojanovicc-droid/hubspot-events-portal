@@ -4,14 +4,14 @@ import { getClientAppMapping } from "@/src/lib/platform/client-app-mapping-store
 import { getClientHubSpotLinkRecord } from "@/src/lib/platform/client-connection-store";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
 import { getEffectiveConnectionStatusAsync } from "@/src/lib/platform/effective-client";
-import { getClientById } from "@/src/lib/platform/mock-data";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import { introspectHubSpotAccessToken } from "@/src/lib/hubspot/connection";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
 import { ensureSearchBoardMappingHydrated } from "@/src/lib/search-board/search-board-hydration";
 
 export default async function AdminDiagnosticsPage() {
   const clientId = await getWorkspaceClientId();
-  const client = getClientById(clientId);
+  const client = await getClientAccountById(clientId);
 
   await ensureSearchBoardMappingHydrated(clientId);
   const mapping = getClientAppMapping(clientId, "search_board");

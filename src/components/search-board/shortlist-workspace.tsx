@@ -16,6 +16,7 @@ import type {
   ShortlistBoardItem,
   ShortlistDraftSlotWire,
 } from "@/src/lib/search-board/types";
+import { OpenInHubSpotIconLink } from "@/src/components/hubspot/open-in-hubspot";
 import { CreateCandidateModal } from "@/src/components/search-board/create-candidate-modal";
 import { StatusBadge } from "@/src/components/search-board/primitives";
 
@@ -147,12 +148,18 @@ export function ShortlistWorkspace({
   shortlist,
   items,
   candidates,
+  hubspotPortalId,
+  shortlistObjectTypeId,
+  candidateObjectTypeId,
 }: {
   clientId: string;
   shortlistId: string;
   shortlist: { id: string; properties: ShortlistProps };
   items: ShortlistBoardItem[];
   candidates: CandidateRecord[];
+  hubspotPortalId: string;
+  shortlistObjectTypeId: string;
+  candidateObjectTypeId: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -346,7 +353,17 @@ export function ShortlistWorkspace({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-hub">Shortlist</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
+              {hubspotPortalId && shortlistObjectTypeId ? (
+                <OpenInHubSpotIconLink
+                  portalId={hubspotPortalId}
+                  objectTypeId={shortlistObjectTypeId}
+                  recordId={shortlistId}
+                  title="Open shortlist in HubSpot"
+                />
+              ) : null}
+            </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
               {clientName ? (
                 <span>
@@ -448,217 +465,239 @@ export function ShortlistWorkspace({
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-        <section
-          className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:min-h-[520px] ${pending ? "opacity-70" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-          }}
-          onDrop={onDropPool}
-        >
-          <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">Candidate pool</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Drag into a rank or use Add. Drag a rank card back here to remove from the shortlist
-                draft.
-              </p>
-            </div>
-          </div>
+      <section className={`space-y-3 ${pending ? "opacity-70" : ""}`}>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">Ranked shortlist</h2>
+          <p className="mt-1 max-w-3xl text-xs text-slate-500">
+            Ranks 1–5 across the top. Drag between slots or from the pool below. Drag a ranked card
+            back to the pool to remove. Save when ready to sync to HubSpot.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {BUILDER_RANKS.map((rank) => {
+            const cell = draft[rank];
+            const c = cell ? candById.get(cell.candidateId) : undefined;
+            const displayName = c
+              ? String(c.properties.candidate_name ?? "—")
+              : cell
+                ? "Unknown candidate"
+                : "";
+            const displayTitle = c ? String(c.properties.current_title ?? "—") : "";
+            const displayLoc = c ? String(c.properties.location ?? "—") : "";
+            const displayCandStatus = c ? String(c.properties.status ?? "—") : "";
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Search name
-              <input
-                value={nameQ}
-                onChange={(e) => setNameQ(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                placeholder="Name contains…"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Location
-              <select
-                value={locFilter}
-                onChange={(e) => setLocFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            return (
+              <div
+                key={rank}
+                onDragOver={onDragOverSlot}
+                onDrop={(e) => onDropSlot(e, rank)}
+                className="flex min-h-[200px] flex-col rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-2.5 transition-colors hover:border-orange-200 sm:min-h-[220px]"
               >
-                <option value="">All locations</option>
-                {locationOptions.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Current title
-              <input
-                value={titleQ}
-                onChange={(e) => setTitleQ(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                placeholder="Title contains…"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Candidate status
-              <input
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                placeholder="Status contains…"
-              />
-            </label>
-          </div>
-
-          <div className="mt-4 max-h-[420px] overflow-auto rounded-xl border border-slate-100">
-            {filteredPool.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">No candidates match these filters.</p>
-            ) : (
-              <table className="min-w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2">Candidate</th>
-                    <th className="px-3 py-2">Title</th>
-                    <th className="px-3 py-2">Location</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredPool.map((c) => {
-                    const pr = c.properties;
-                    const cn = String(pr.candidate_name ?? "—");
-                    const id = String(c.id);
-                    const onShortlist = BUILDER_RANKS.some((r) => draft[r]?.candidateId === id);
-                    return (
-                      <tr key={id} className="bg-white hover:bg-slate-50/80">
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            draggable
-                            onDragStart={(e) => onDragStartPool(e, id)}
-                            className="cursor-grab text-left font-medium text-slate-900 active:cursor-grabbing"
-                          >
-                            {cn}
-                          </button>
-                          <p className="font-mono text-[10px] text-slate-400">{id}</p>
-                        </td>
-                        <td className="px-3 py-2 text-slate-600">{String(pr.current_title ?? "—")}</td>
-                        <td className="px-3 py-2 text-slate-600">{String(pr.location ?? "—")}</td>
-                        <td className="px-3 py-2 text-slate-600">{String(pr.status ?? "—")}</td>
-                        <td className="px-3 py-2">
-                          {onShortlist ? (
-                            <span className="text-xs text-slate-400">On list</span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={firstEmptyRank === undefined}
-                              onClick={() => addCandidateToFirstEmpty(id)}
-                              className="text-xs font-semibold text-hub-ink hover:underline disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              Add
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        <section className={`space-y-4 ${pending ? "opacity-70" : ""}`}>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">Ranked shortlist (top 5)</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              One candidate per rank in the draft. Replacing a rank drops the previous person from
-              these five slots until you save.
-            </p>
-          </div>
-          <div className="flex flex-col !space-y-3">
-            {BUILDER_RANKS.map((rank) => {
-              const cell = draft[rank];
-              const c = cell ? candById.get(cell.candidateId) : undefined;
-              const displayName = c
-                ? String(c.properties.candidate_name ?? "—")
-                : cell
-                  ? "Unknown candidate"
-                  : "";
-              const displayTitle = c ? String(c.properties.current_title ?? "—") : "";
-              const displayLoc = c ? String(c.properties.location ?? "—") : "";
-              const displayCandStatus = c ? String(c.properties.status ?? "—") : "";
-
-              return (
-                <div
-                  key={rank}
-                  onDragOver={onDragOverSlot}
-                  onDrop={(e) => onDropSlot(e, rank)}
-                  className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 transition-colors hover:border-hub-muted"
-                >
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
-                    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Rank {rank}
-                    </span>
-                    {cell ? (
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditRank(rank)}
-                          className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white"
-                        >
-                          Notes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => clearSlot(rank)}
-                          className="rounded-md px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
+                <div className="flex shrink-0 items-center justify-between gap-1 border-b border-slate-200/80 pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                    Rank {rank}
+                  </span>
                   {cell ? (
-                    <div
-                      draggable
-                      onDragStart={(e) => onDragStartSlot(e, cell, rank)}
-                      className="mt-3 cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm active:cursor-grabbing"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
+                    <div className="flex flex-wrap justify-end gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditRank(rank)}
+                        className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-white"
+                      >
+                        Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => clearSlot(rank)}
+                        className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                {cell ? (
+                  <div
+                    draggable
+                    onDragStart={(e) => onDragStartSlot(e, cell, rank)}
+                    className="mt-2 min-h-0 flex-1 cursor-grab rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm active:cursor-grabbing"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1">
                           <Link
                             href={`/apps/search-board/candidates/${cell.candidateId}`}
-                            className="font-semibold text-hub-ink hover:underline"
+                            className="break-words font-semibold leading-snug text-hub-ink hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {displayName}
                           </Link>
-                          <p className="font-mono text-[10px] text-slate-400">
-                            {cell.entryId ? `Entry ${cell.entryId}` : "New (unsaved)"} ·{" "}
-                            {cell.candidateId}
-                          </p>
+                          {hubspotPortalId && candidateObjectTypeId ? (
+                            <span className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <OpenInHubSpotIconLink
+                                portalId={hubspotPortalId}
+                                objectTypeId={candidateObjectTypeId}
+                                recordId={cell.candidateId}
+                                title="Open candidate in HubSpot"
+                              />
+                            </span>
+                          ) : null}
                         </div>
-                        <StatusBadge label={cell.shortlistStatus || "New"} />
+                        <p className="mt-0.5 break-all font-mono text-[9px] leading-tight text-slate-400">
+                          {cell.entryId ? `Entry ${cell.entryId}` : "New"} · {cell.candidateId}
+                        </p>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">{displayTitle || "—"}</p>
-                      <p className="text-xs text-slate-500">{displayLoc || "—"}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Cand. status: {displayCandStatus || "—"}
+                      <StatusBadge label={cell.shortlistStatus || "New"} />
+                      <p className="line-clamp-2 text-xs text-slate-600">{displayTitle || "—"}</p>
+                      <p className="line-clamp-2 text-[11px] text-slate-500">{displayLoc || "—"}</p>
+                      <p className="line-clamp-2 text-[11px] text-slate-500">
+                        Status: {displayCandStatus || "—"}
                       </p>
                     </div>
-                  ) : (
-                    <p className="mt-6 text-center text-sm text-slate-400">Drop a candidate here</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+                  </div>
+                ) : (
+                  <p className="mt-auto flex flex-1 items-center justify-center px-1 text-center text-xs text-slate-400">
+                    Drop here
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${pending ? "opacity-70" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={onDropPool}
+      >
+        <div className="border-b border-slate-100 pb-3">
+          <h2 className="text-sm font-semibold text-slate-900">Candidate pool</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Filter and browse. Drag a card into a rank or use Add. Drag from a rank back here to
+            remove from the draft.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Search name
+            <input
+              value={nameQ}
+              onChange={(e) => setNameQ(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              placeholder="Name contains…"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Location
+            <select
+              value={locFilter}
+              onChange={(e) => setLocFilter(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            >
+              <option value="">All locations</option>
+              {locationOptions.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Current title
+            <input
+              value={titleQ}
+              onChange={(e) => setTitleQ(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              placeholder="Title contains…"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Candidate status
+            <input
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              placeholder="Status contains…"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 max-h-[min(60vh,720px)] overflow-y-auto overflow-x-hidden rounded-xl border border-slate-100 p-2">
+          {filteredPool.length === 0 ? (
+            <p className="p-6 text-center text-sm text-slate-500">No candidates match these filters.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredPool.map((c) => {
+                const pr = c.properties;
+                const cn = String(pr.candidate_name ?? "—");
+                const id = String(c.id);
+                const onShortlist = BUILDER_RANKS.some((r) => draft[r]?.candidateId === id);
+                return (
+                  <div
+                    key={id}
+                    draggable
+                    onDragStart={(e) => onDragStartPool(e, id)}
+                    className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/40 p-3 shadow-sm transition hover:border-slate-300 hover:bg-white"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          type="button"
+                          className="cursor-grab text-left text-sm font-semibold text-slate-900 active:cursor-grabbing"
+                        >
+                          {cn}
+                        </button>
+                        {hubspotPortalId && candidateObjectTypeId ? (
+                          <OpenInHubSpotIconLink
+                            portalId={hubspotPortalId}
+                            objectTypeId={candidateObjectTypeId}
+                            recordId={id}
+                            title="Open candidate in HubSpot"
+                          />
+                        ) : null}
+                      </div>
+                      <p className="mt-1 break-all font-mono text-[10px] text-slate-400">{id}</p>
+                      <dl className="mt-2 space-y-1 text-xs text-slate-600">
+                        <div>
+                          <dt className="text-slate-400">Title</dt>
+                          <dd className="break-words">{String(pr.current_title ?? "—")}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-slate-400">Location</dt>
+                          <dd className="break-words">{String(pr.location ?? "—")}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-slate-400">Status</dt>
+                          <dd>{String(pr.status ?? "—")}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    <div className="mt-3 border-t border-slate-200/80 pt-2">
+                      {onShortlist ? (
+                        <span className="text-xs text-slate-400">On shortlist</span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={firstEmptyRank === undefined}
+                          onClick={() => addCandidateToFirstEmpty(id)}
+                          className="text-xs font-semibold text-hub-ink hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Add to next open rank
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6">
         <h2 className="text-sm font-semibold text-slate-900">Shortlist</h2>

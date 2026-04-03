@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { BypassLoginButton } from "@/src/components/auth/bypass-login-button";
 import { GoogleSignInButton } from "@/src/components/auth/google-sign-in-button";
 import { OAuthUnavailableNotice } from "@/src/components/auth/oauth-unavailable";
 import { SignInBrandHeader } from "@/src/components/auth/sign-in-card";
+import { isAuthDisabled } from "@/src/lib/auth/auth-disabled";
 import { isGoogleOAuthConfigured } from "@/src/lib/auth/auth-env";
 import { getSidebarLogoSrc } from "@/src/lib/platform/branding";
 
@@ -14,6 +16,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const callbackUrl = sp.callbackUrl?.startsWith("/") ? sp.callbackUrl : "/dashboard";
   const error = sp.error;
+  const bypassAuth = isAuthDisabled();
   const googleReady = isGoogleOAuthConfigured();
   const logoSrc = await getSidebarLogoSrc();
 
@@ -39,8 +42,18 @@ export default async function SignInPage({ searchParams }: PageProps) {
             </p>
           ) : null}
 
-          <div className="mt-6">
-            {googleReady ? (
+          <div className="mt-6 space-y-4">
+            {bypassAuth ? (
+              <>
+                <BypassLoginButton href={callbackUrl} />
+                <p className="text-center text-xs text-slate-500">
+                  Testing mode — no password or Google. Turn off{" "}
+                  <code className="rounded bg-slate-100 px-1">OPEN_APP_LOGIN</code> /{" "}
+                  <code className="rounded bg-slate-100 px-1">AUTH_DISABLED</code> on
+                  Vercel when you enable real OAuth.
+                </p>
+              </>
+            ) : googleReady ? (
               <GoogleSignInButton callbackUrl={callbackUrl} />
             ) : (
               <OAuthUnavailableNotice />

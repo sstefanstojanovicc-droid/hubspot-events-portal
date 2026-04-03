@@ -20,7 +20,7 @@ const metadataBase = getDeploymentUrl();
 
 export const metadata: Metadata = {
   ...(metadataBase ? { metadataBase } : {}),
-  title: "Hub Workspace",
+  title: "HubSpot Operations Platform",
   description: "Client workspace and Search Board.",
 };
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { touchClientHubSpotSyncAt } from "@/src/lib/platform/client-accounts-repo";
 import { getClientAppMapping } from "@/src/lib/platform/client-app-mapping-store";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
 import {
@@ -872,6 +873,8 @@ export async function loadDashboardStats(clientId: string): Promise<
       return tb - ta;
     })
     .slice(0, 8);
+
+  await touchClientHubSpotSyncAt(clientId);
 
   return {
     ok: true,

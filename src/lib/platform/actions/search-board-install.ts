@@ -24,7 +24,7 @@ export async function runSearchBoardInstallAction(
 ): Promise<RunSearchBoardInstallState> {
   await requireAdmin();
   const clientId = String(formData.get("clientId") ?? "");
-  const client = requireClientOrNull(clientId);
+  const client = await requireClientOrNull(clientId);
   if (!client) {
     return { ok: false, message: "Unknown client." };
   }

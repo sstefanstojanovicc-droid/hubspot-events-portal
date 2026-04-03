@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
+import { OpenInHubSpotIconLink } from "@/src/components/hubspot/open-in-hubspot";
 import { StatusBadge } from "@/src/components/search-board/primitives";
 import {
   updateCandidateAction,
@@ -21,10 +22,18 @@ export function CandidateDetailClient({
   clientId,
   candidate,
   memberships,
+  hubspotPortalId,
+  candidateObjectTypeId,
+  shortlistObjectTypeId,
+  entryObjectTypeId,
 }: {
   clientId: string;
   candidate: CandidateRecord;
   memberships: Array<{ entry: ShortlistEntryRecord; shortlist: ShortlistRecord }>;
+  hubspotPortalId: string;
+  candidateObjectTypeId: string;
+  shortlistObjectTypeId: string;
+  entryObjectTypeId: string;
 }) {
   const p = candidate.properties;
   const name = String(p.candidate_name ?? "Candidate");
@@ -35,7 +44,17 @@ export function CandidateDetailClient({
     <div className="space-y-10">
       <header className="border-b border-slate-200 pb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-hub">Candidate</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{name}</h1>
+          {hubspotPortalId && candidateObjectTypeId ? (
+            <OpenInHubSpotIconLink
+              portalId={hubspotPortalId}
+              objectTypeId={candidateObjectTypeId}
+              recordId={candidate.id}
+              title="Open candidate in HubSpot"
+            />
+          ) : null}
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
           {p.current_title ? (
             <span>
@@ -93,12 +112,30 @@ export function CandidateDetailClient({
               return (
                 <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div>
-                    <Link
-                      href={`/apps/search-board/shortlists/${shortlist.id}`}
-                      className="font-medium text-hub-ink hover:underline"
-                    >
-                      {slName}
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Link
+                        href={`/apps/search-board/shortlists/${shortlist.id}`}
+                        className="font-medium text-hub-ink hover:underline"
+                      >
+                        {slName}
+                      </Link>
+                      {hubspotPortalId && shortlistObjectTypeId ? (
+                        <OpenInHubSpotIconLink
+                          portalId={hubspotPortalId}
+                          objectTypeId={shortlistObjectTypeId}
+                          recordId={shortlist.id}
+                          title="Open shortlist in HubSpot"
+                        />
+                      ) : null}
+                      {hubspotPortalId && entryObjectTypeId ? (
+                        <OpenInHubSpotIconLink
+                          portalId={hubspotPortalId}
+                          objectTypeId={entryObjectTypeId}
+                          recordId={entry.id}
+                          title="Open shortlist entry in HubSpot"
+                        />
+                      ) : null}
+                    </div>
                     <p className="text-xs text-slate-500">
                       Rank #{String(entry.properties.rank ?? "—")} · {String(shortlist.properties.client_name ?? "")}
                     </p>

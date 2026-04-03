@@ -14,14 +14,17 @@ model User {
   email           String?   @unique
   emailVerified   DateTime? @map("email_verified")
   image           String?
-  /// admin | client_user | client_admin (reserved)
+  /// admin | client_user | client_admin
   role            String    @default("client_user")
   clientAccountId String?   @map("client_account_id")
   /// invited | active | disabled
   status          String    @default("invited")
 
-  accounts Account[]
-  sessions Session[]
+  accounts           Account[]
+  sessions           Session[]
+  clientAccount      ClientAccount?    @relation(fields: [clientAccountId], references: [id], onDelete: SetNull)
+  activityLogs       ActivityLog[]
+  assignedPlanTasks  ActionPlanTask[]  @relation("PlanTaskAssignee")
 
   @@map("users")
 }
@@ -73,6 +76,214 @@ model AppSetting {
   @@map("app_settings")
 }
 
+/// Tenant / client workspace (HubSpot portal + apps).
+model ClientAccount {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  hubspotPortalId  String    @map("hubspot_portal_id")
+  websiteUrl       String    @default("") @map("website_url")
+  /// JSON array: [{ name, email?, role? }]
+  primaryContactsJson String @default("[]") @map("primary_contacts_json")
+  /// connected | ready_to_connect | attention_needed | not_connected
+  connectionStatus String    @default("not_connected") @map("connection_status")
+  lastHubspotSyncAt DateTime? @map("last_hubspot_sync_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  users               User[]
+  activityLogs        ActivityLog[]
+  fathomCalls         FathomCall[]
+  packageInstallations PackageInstallation[]
+  actionPlans         ActionPlan[]
+  trainingModules     TrainingModule[]
+
+  implementationResources ImplementationResource[]
+  packageDefinitions     PackageDefinition[]
+  hubspotAiThreads       HubspotAiChatThread[]
+  hubspotAiPortalSnapshots HubspotAiPortalSnapshot[]
+  hubspotAiWritePlans    HubspotAiWritePlan[]
+
+  @@map("client_accounts")
+}
+
+/// SOW, notes, Miro, Fathom links — context for HubSpot AI implementation assistant (per client).
+model ImplementationResource {
+  id              String   @id @default(cuid())
+  clientAccountId String?  @map("client_account_id")
+  type            String
+  title           String
+  url             String?
+  content         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  client ClientAccount? @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccountId])
+  @@map("implementation_resources")
+}
+
+/// HubSpot articles and operator rules for AI implementation (platform-wide).
+model PlatformKnowledgeEntry {
+  id        String   @id @default(cuid())
+  /// hubspot_article | rule
+  kind      String
+  title     String
+  sourceUrl String?  @map("source_url")
+  body      String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_knowledge_entries")
+}
+
+/// Manual package builder draft: portal + selected HubSpot resource types (extension-style flow in-app).
+model ManualPackageDraft {
+  id                    String   @id @default(cuid())
+  name                  String   @default("Untitled package")
+  sourceHubspotPortalId String   @map("source_hubspot_portal_id")
+  itemsJson             String   @default("[]") @map("items_json")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("manual_package_drafts")
+}
+
+model HubspotAiChatThread {
+  id              String   @id @default(cuid())
+  clientAccountId String   @map("client_account_id")
+  title           String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  client   ClientAccount            @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+  messages HubspotAiChatMessage[]
+
+  @@index([clientAccountId])
+  @@map("hubspot_ai_chat_threads")
+}
+
+model HubspotAiChatMessage {
+  id        String   @id @default(cuid())
+  threadId  String   @map("thread_id")
+  role      String
+  content   String
+  metadata  String   @default("{}") @map("metadata_json")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  thread HubspotAiChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@map("hubspot_ai_chat_messages")
+}
+
+model HubspotAiPortalSnapshot {
+  id              String   @id @default(cuid())
+  clientAccountId String   @map("client_account_id")
+  hubspotPortalId String   @map("hubspot_portal_id")
+  summary         String?
+  payload         String   @default("{}") @map("payload_json")
+  source          String   @default("ingestion") @map("source")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  client ClientAccount @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccountId, createdAt])
+  @@map("hubspot_ai_portal_snapshots")
+}
+
+model HubspotAiWritePlan {
+  id              String @id @default(cuid())
+  clientAccountId String @map("client_account_id")
+  hubspotPortalId String @map("hubspot_portal_id")
+
+  title       String
+  description String?
+  /// DRAFT | APPROVED | RUNNING | SUCCESS | PARTIAL | FAILED
+  status      String @default("DRAFT")
+
+  operationCount  Int  @default(0) @map("operation_count")
+  recordsAffected Int? @map("records_affected")
+
+  approvedSnapshot String? @map("approved_snapshot_json")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  approvedAt DateTime? @map("approved_at")
+
+  client        ClientAccount                 @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+  operations    HubspotAiWritePlanOperation[]
+  executionRuns HubspotAiExecutionRun[]
+
+  @@index([clientAccountId])
+  @@index([status])
+  @@map("hubspot_ai_write_plans")
+}
+
+model HubspotAiWritePlanOperation {
+  id          String @id @default(cuid())
+  writePlanId String @map("write_plan_id")
+  order       Int    @map("sort_order")
+
+  type           String @map("op_type")
+  targetObject   String? @map("target_object")
+  actionSummary  String @map("action_summary")
+  payload        String @default("{}") @map("payload_json")
+  payloadSummary String? @map("payload_summary")
+
+  validationResult String? @map("validation_result_json")
+  validationStatus String? @map("validation_status")
+
+  hubspotUrl String? @map("hubspot_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  writePlan HubspotAiWritePlan     @relation(fields: [writePlanId], references: [id], onDelete: Cascade)
+  stepLogs  HubspotAiExecutionStepLog[]
+
+  @@unique([writePlanId, order])
+  @@index([writePlanId])
+  @@map("hubspot_ai_write_plan_operations")
+}
+
+model HubspotAiExecutionRun {
+  id          String @id @default(cuid())
+  writePlanId String @map("write_plan_id")
+
+  status      String
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  summary     String?   @map("summary")
+
+  writePlan HubspotAiWritePlan          @relation(fields: [writePlanId], references: [id], onDelete: Cascade)
+  steps     HubspotAiExecutionStepLog[]
+
+  @@index([writePlanId])
+  @@map("hubspot_ai_execution_runs")
+}
+
+model HubspotAiExecutionStepLog {
+  id             String @id @default(cuid())
+  executionRunId String @map("execution_run_id")
+  operationId    String @map("operation_id")
+
+  requestMeta  String? @map("request_meta_json")
+  responseMeta String? @map("response_meta_json")
+
+  success      Boolean
+  errorMessage String? @map("error_message")
+  hubspotUrl   String? @map("hubspot_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  executionRun HubspotAiExecutionRun       @relation(fields: [executionRunId], references: [id], onDelete: Cascade)
+  operation    HubspotAiWritePlanOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@index([executionRunId])
+  @@map("hubspot_ai_execution_step_logs")
+}
+
 /// Pre-approved email for first Google sign-in (consumes on user creation).
 model Invite {
   id              String    @id @default(cuid())
@@ -83,4 +294,191 @@ model Invite {
   consumedAt      DateTime? @map("consumed_at")
 
   @@map("invites")
+}
+
+/// Append-only audit trail per client workspace.
+model ActivityLog {
+  id              String   @id @default(cuid())
+  clientAccountId String   @map("client_account_id")
+  userId          String?  @map("user_id")
+  action          String
+  entityType      String   @map("entity_type")
+  entityId        String?  @map("entity_id")
+  details         String   @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  client ClientAccount @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([clientAccountId, createdAt])
+  @@map("activity_logs")
+}
+
+/// Versioned package definition (platform library).
+model PackageDefinition {
+  id                    String   @id @default(cuid())
+  name                  String
+  description           String   @default("")
+  sourceHubspotPortalId String?  @map("source_hubspot_portal_id")
+  /// When set, package was created in HubSpot AI Implementation for this client workspace.
+  clientAccountId       String?  @map("client_account_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  clientAccount ClientAccount? @relation(fields: [clientAccountId], references: [id], onDelete: SetNull)
+  versions       PackageVersion[]
+
+  @@index([clientAccountId])
+  @@map("package_definitions")
+}
+
+model PackageVersion {
+  id           String   @id @default(cuid())
+  packageId    String   @map("package_id")
+  versionLabel String   @map("version_label")
+  notes        String   @default("")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  package        PackageDefinition     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  installations  PackageInstallation[]
+
+  @@index([packageId])
+  @@map("package_versions")
+}
+
+/// Package deployed / installed on a client account.
+model PackageInstallation {
+  id                 String   @id @default(cuid())
+  packageVersionId   String   @map("package_version_id")
+  clientAccountId    String   @map("client_account_id")
+  /// installed | pending | failed
+  status             String   @default("installed")
+  deployedAt         DateTime @default(now()) @map("deployed_at")
+
+  version PackageVersion @relation(fields: [packageVersionId], references: [id], onDelete: Cascade)
+  client  ClientAccount  @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccountId])
+  @@map("package_installations")
+}
+
+/// Reusable plan template (global when clientAccountId is null).
+model ActionPlanTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String   @default("")
+  clientAccountId String?  @map("client_account_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tasks ActionPlanTemplateTask[]
+  plans ActionPlan[]
+
+  @@index([clientAccountId])
+  @@map("action_plan_templates")
+}
+
+model ActionPlanTemplateTask {
+  id           String @id @default(cuid())
+  templateId   String @map("template_id")
+  title        String
+  phaseTitle   String? @map("phase_title")
+  sectionTitle String? @map("section_title")
+  sortOrder    Int    @map("sort_order")
+
+  template ActionPlanTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("action_plan_template_tasks")
+}
+
+/// Live action plan on a client account.
+model ActionPlan {
+  id              String   @id @default(cuid())
+  clientAccountId String   @map("client_account_id")
+  templateId      String?  @map("template_id")
+  title           String
+  /// active | completed | archived
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  client   ClientAccount         @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+  template ActionPlanTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  tasks    ActionPlanTask[]
+  fathomCalls FathomCall[]
+
+  @@index([clientAccountId, status])
+  @@map("action_plans")
+}
+
+model ActionPlanTask {
+  id             String    @id @default(cuid())
+  planId         String    @map("plan_id")
+  title          String
+  phaseTitle     String?   @map("phase_title")
+  sectionTitle   String?   @map("section_title")
+  sortOrder      Int       @map("sort_order")
+  done           Boolean   @default(false)
+  dueAt          DateTime? @map("due_at")
+  assigneeUserId String?   @map("assignee_user_id")
+
+  plan     ActionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  assignee User?      @relation("PlanTaskAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  cards    ActionPlanTaskCard[]
+
+  @@index([planId])
+  @@map("action_plan_tasks")
+}
+
+/// Rich content inside a task (Supered-style cards).
+model ActionPlanTaskCard {
+  id         String @id @default(cuid())
+  taskId     String @map("task_id")
+  /// text | link | file | video | hubspot_record_link | checklist | warning
+  cardType   String @map("card_type")
+  sortOrder  Int    @map("sort_order")
+  payloadJson String @default("{}") @map("payload_json")
+
+  task ActionPlanTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("action_plan_task_cards")
+}
+
+/// Fathom / call ingestion row.
+model FathomCall {
+  id                 String   @id @default(cuid())
+  clientAccountId    String   @map("client_account_id")
+  title              String
+  callAt             DateTime @map("call_at")
+  attendeesJson      String   @default("[]") @map("attendees_json")
+  transcript         String   @default("")
+  summary            String   @default("")
+  /// pending | processing | done | error
+  extractionStatus   String   @default("pending") @map("extraction_status")
+  source             String   @default("manual")
+  linkedActionPlanId String?  @map("linked_action_plan_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  client     ClientAccount @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+  linkedPlan ActionPlan?   @relation(fields: [linkedActionPlanId], references: [id], onDelete: SetNull)
+
+  @@index([clientAccountId, callAt])
+  @@map("fathom_calls")
+}
+
+/// Training / handover module (global template when clientAccountId is null).
+model TrainingModule {
+  id              String   @id @default(cuid())
+  clientAccountId String?  @map("client_account_id")
+  title           String
+  /// guide | sop | walkthrough | checklist | faq
+  contentType     String   @default("guide") @map("content_type")
+  body            String   @default("")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  client ClientAccount? @relation(fields: [clientAccountId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccountId])
+  @@map("training_modules")
 }

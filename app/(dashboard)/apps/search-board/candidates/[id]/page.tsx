@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CandidateDetailClient } from "@/src/components/search-board/candidate-detail-client";
 import { EmptyState } from "@/src/components/search-board/primitives";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import {
   getCandidateById,
   listCandidateShortlistMemberships,
@@ -44,9 +45,10 @@ export default async function CandidateDetailPage({ params }: PageProps) {
     );
   }
 
-  const [cand, mem] = await Promise.all([
+  const [cand, mem, account] = await Promise.all([
     getCandidateById(clientId, id),
     listCandidateShortlistMemberships(clientId, id),
+    getClientAccountById(clientId),
   ]);
 
   if (!cand.ok) {
@@ -92,7 +94,15 @@ export default async function CandidateDetailPage({ params }: PageProps) {
           Shortlists
         </Link>
       </nav>
-      <CandidateDetailClient clientId={clientId} candidate={cand.candidate} memberships={mem.rows} />
+      <CandidateDetailClient
+        clientId={clientId}
+        candidate={cand.candidate}
+        memberships={mem.rows}
+        hubspotPortalId={account?.hubspotPortalId ?? ""}
+        candidateObjectTypeId={gate.tenant.candidateTypeId}
+        shortlistObjectTypeId={gate.tenant.shortlistTypeId}
+        entryObjectTypeId={gate.tenant.entryTypeId}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ShortlistWorkspace } from "@/src/components/search-board/shortlist-workspace";
 import { EmptyState } from "@/src/components/search-board/primitives";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import {
   listCandidates,
   loadShortlistBoardData,
@@ -66,7 +67,10 @@ export default async function ShortlistDetailPage({ params }: PageProps) {
     );
   }
 
-  const candRes = await listCandidates(clientId);
+  const [candRes, account] = await Promise.all([
+    listCandidates(clientId),
+    getClientAccountById(clientId),
+  ]);
   const candidates = candRes.ok ? candRes.candidates : [];
 
   return (
@@ -82,6 +86,9 @@ export default async function ShortlistDetailPage({ params }: PageProps) {
         shortlist={board.shortlist}
         items={board.items}
         candidates={candidates}
+        hubspotPortalId={account?.hubspotPortalId ?? ""}
+        shortlistObjectTypeId={gate.tenant.shortlistTypeId}
+        candidateObjectTypeId={gate.tenant.candidateTypeId}
       />
     </div>
   );

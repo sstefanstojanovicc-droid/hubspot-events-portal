@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireAdmin } from "@/src/lib/auth/guards";
+import { requirePlatformAdmin } from "@/src/lib/auth/guards";
 import { introspectHubSpotAccessToken } from "@/src/lib/hubspot/connection";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
 import { setClientHubSpotLinkRecord } from "@/src/lib/platform/client-connection-store";
-import { getClientById } from "@/src/lib/platform/mock-data";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
+import { logActivity } from "@/src/lib/workspace/activity-log";
 
 export type ConnectHubSpotActionState = { ok: boolean; message: string };
 
@@ -15,10 +16,10 @@ export async function connectHubSpotForClientAction(
   _prev: ConnectHubSpotActionState | undefined,
   formData: FormData,
 ): Promise<ConnectHubSpotActionState> {
-  await requireAdmin();
+  const session = await requirePlatformAdmin();
   const clientId = String(formData.get("clientId") ?? "");
   const afterSuccess = String(formData.get("afterSuccess") ?? "");
-  const client = getClientById(clientId);
+  const client = await getClientAccountById(clientId);
   if (!client) {
     return { ok: false, message: "Unknown client." };
   }
@@ -65,6 +66,15 @@ export async function connectHubSpotForClientAction(
       message: `Token is for HubSpot portal ${introspect.portalId}, but this client account expects ${client.hubspotPortalId}.`,
     };
   }
+
+  await logActivity({
+    clientAccountId: clientId,
+    userId: session.user.id,
+    action: "hubspot.connected",
+    entityType: "hubspot_connection",
+    entityId: clientId,
+    details: { portalId: introspect.portalId },
+  });
 
   if (afterSuccess === "redirect-install") {
     redirect(

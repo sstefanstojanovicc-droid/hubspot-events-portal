@@ -7,7 +7,8 @@ import { getClientHubSpotLinkRecord } from "@/src/lib/platform/client-connection
 import { getClientAppInstallOverrides } from "@/src/lib/platform/client-install-overrides-store";
 import { ensureSearchBoardMappingHydrated } from "@/src/lib/search-board/search-board-hydration";
 import type { ClientAccount, ClientConnectionStatus, InstalledAppView } from "@/src/types/platform-tenant";
-import { getClientById, getInstalledAppsForClient } from "@/src/lib/platform/mock-data";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
+import { getInstalledAppsForClient } from "@/src/lib/platform/mock-data";
 
 export function getEffectiveConnectionStatus(
   client: ClientAccount,
@@ -98,6 +99,6 @@ export async function getEnabledAppsWithOverridesAsync(clientId: string): Promis
   return (await getInstalledAppsWithOverridesAsync(clientId)).filter((install) => install.enabled);
 }
 
-export function requireClientOrNull(id: string): ClientAccount | null {
-  return getClientById(id) ?? null;
+export async function requireClientOrNull(id: string): Promise<ClientAccount | null> {
+  return getClientAccountById(id);
 }

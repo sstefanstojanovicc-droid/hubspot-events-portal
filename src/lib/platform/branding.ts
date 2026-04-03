@@ -16,4 +16,4 @@ export async function getSidebarLogoSrc(): Promise<string | null> {
   return envUrl || null;
 }
 
-export const BRANDING_APP_NAME = "Hub Workspace";
+export const BRANDING_APP_NAME = "HubSpot Operations Platform";

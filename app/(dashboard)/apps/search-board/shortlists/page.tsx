@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ShortlistsIndexClient } from "@/src/components/search-board/shortlists-index-client";
 import { EmptyState } from "@/src/components/search-board/primitives";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import {
   buildShortlistEntryCounts,
   listShortlists,
@@ -38,9 +39,10 @@ export default async function SearchBoardShortlistsPage() {
     );
   }
 
-  const [lists, counts] = await Promise.all([
+  const [lists, counts, account] = await Promise.all([
     listShortlists(clientId),
     buildShortlistEntryCounts(clientId),
+    getClientAccountById(clientId),
   ]);
 
   if (!lists.ok) {
@@ -61,7 +63,12 @@ export default async function SearchBoardShortlistsPage() {
         </p>
       </div>
 
-      <ShortlistsIndexClient shortlists={lists.shortlists} entryCounts={counts} />
+      <ShortlistsIndexClient
+        shortlists={lists.shortlists}
+        entryCounts={counts}
+        hubspotPortalId={account?.hubspotPortalId ?? ""}
+        shortlistObjectTypeId={gate.tenant.shortlistTypeId}
+      />
     </div>
   );
 }

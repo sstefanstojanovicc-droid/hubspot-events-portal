@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { OpenInHubSpotIconLink } from "@/src/components/hubspot/open-in-hubspot";
 import { StatusBadge } from "@/src/components/search-board/primitives";
 import type { ShortlistRecord } from "@/src/lib/search-board/types";
 
 export function ShortlistsIndexClient({
   shortlists,
   entryCounts,
+  hubspotPortalId = "",
+  shortlistObjectTypeId = "",
 }: {
   shortlists: ShortlistRecord[];
   entryCounts: Record<string, number>;
+  hubspotPortalId?: string;
+  shortlistObjectTypeId?: string;
 }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
@@ -142,12 +147,22 @@ export function ShortlistsIndexClient({
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link
-                    href={`/apps/search-board/shortlists/${s.id}`}
-                    className="text-lg font-semibold text-slate-900 group-hover:text-hub-ink"
-                  >
-                    {name}
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Link
+                      href={`/apps/search-board/shortlists/${s.id}`}
+                      className="text-lg font-semibold text-slate-900 group-hover:text-hub-ink"
+                    >
+                      {name}
+                    </Link>
+                    {hubspotPortalId && shortlistObjectTypeId ? (
+                      <OpenInHubSpotIconLink
+                        portalId={hubspotPortalId}
+                        objectTypeId={shortlistObjectTypeId}
+                        recordId={s.id}
+                        title="Open shortlist in HubSpot"
+                      />
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm text-slate-600">
                     {String(p.client_name ?? "—")} · {String(p.role_title ?? "—")}
                   </p>

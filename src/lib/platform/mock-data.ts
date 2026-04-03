@@ -1,6 +1,5 @@
 import type {
   AppDefinition,
-  ClientAccount,
   ClientAppInstall,
   InstalledAppView,
   PlatformUser,
@@ -24,18 +23,18 @@ export const platformUsers: PlatformUser[] = [
   },
 ];
 
-/** Single real dev tenant — replace with DB-backed rows later. */
-export const clientAccounts: ClientAccount[] = [
-  {
-    id: DEFAULT_DEV_CLIENT_ID,
-    name: "Anicca Dev Test Account",
-    slug: "anicca-dev-test",
-    hubspotPortalId: "46168086",
-    connectionStatus: "ready_to_connect",
-  },
-];
-
 export const appDefinitions: AppDefinition[] = [
+  {
+    id: "app-hubspot-ai",
+    key: "hubspot_ai",
+    name: "HubSpot AI Implementation",
+    description:
+      "AI-assisted RevOps planning: project resources (SOW, notes, links), mock chat, and reviewable write plans before HubSpot changes.",
+    status: "ready",
+    route: "/portal",
+    clientWorkspacePath: "hubspot-ai",
+    audience: "both",
+  },
   {
     id: "app-search-board",
     key: "search_board",
@@ -67,10 +66,12 @@ export const appDefinitions: AppDefinition[] = [
   {
     id: "app-supered",
     key: "supered_replacement",
-    name: "Supered Replacement",
-    description: "Training / enablement surface (placeholder).",
+    name: "Action Plans",
+    description:
+      "Implementation and onboarding plans: templates, tasks, and handover (coming soon).",
     status: "planned",
     route: "/portal",
+    clientWorkspacePath: "action-plans",
     audience: "both",
   },
   {
@@ -84,43 +85,27 @@ export const appDefinitions: AppDefinition[] = [
   },
 ];
 
-export const clientAppInstalls: ClientAppInstall[] = [
-  {
-    id: "install-anicca-search-board",
-    clientId: DEFAULT_DEV_CLIENT_ID,
-    appId: "app-search-board",
-    enabled: true,
-    mappingStatus: "not_started",
-  },
-  {
-    id: "install-anicca-events",
-    clientId: DEFAULT_DEV_CLIENT_ID,
-    appId: "app-events",
-    enabled: false,
-    mappingStatus: "not_started",
-  },
-  {
-    id: "install-anicca-calendar",
-    clientId: DEFAULT_DEV_CLIENT_ID,
-    appId: "app-calendar",
-    enabled: false,
-    mappingStatus: "not_started",
-  },
-  {
-    id: "install-anicca-supered",
-    clientId: DEFAULT_DEV_CLIENT_ID,
-    appId: "app-supered",
-    enabled: false,
-    mappingStatus: "not_started",
-  },
-  {
-    id: "install-anicca-cpq",
-    clientId: DEFAULT_DEV_CLIENT_ID,
-    appId: "app-cpq",
-    enabled: false,
-    mappingStatus: "not_started",
-  },
-];
+function buildDefaultInstallsForClient(clientId: string): ClientAppInstall[] {
+  return appDefinitions.map((app) => ({
+    id: `install-${clientId}-${app.id}`,
+    clientId,
+    appId: app.id,
+    enabled: app.key === "search_board" || app.key === "hubspot_ai",
+    mappingStatus: "not_started" as const,
+  }));
+}
+
+let clientAppInstallStore: ClientAppInstall[] =
+  buildDefaultInstallsForClient(DEFAULT_DEV_CLIENT_ID);
+
+/** Idempotent: adds default app install rows for a new tenant (Search Board on, others off). */
+export function registerNewClientAppInstalls(clientId: string): void {
+  if (clientAppInstallStore.some((i) => i.clientId === clientId)) return;
+  clientAppInstallStore = [
+    ...clientAppInstallStore,
+    ...buildDefaultInstallsForClient(clientId),
+  ];
+}
 
 export function getMockCurrentPlatformAdmin() {
   return platformUsers.find((user) => user.role === "admin") ?? null;
@@ -130,12 +115,10 @@ export function getMockCurrentClientUser() {
   return platformUsers.find((user) => user.role === "client_user") ?? null;
 }
 
-export function getClientById(id: string) {
-  return clientAccounts.find((client) => client.id === id);
-}
-
 export function getInstalledAppsForClient(clientId: string): InstalledAppView[] {
-  const installs = clientAppInstalls.filter((install) => install.clientId === clientId);
+  const installs = clientAppInstallStore.filter(
+    (install) => install.clientId === clientId,
+  );
 
   return installs
     .map((install) => {
@@ -158,7 +141,7 @@ export function getEnabledAppsForClient(clientId: string): InstalledAppView[] {
 }
 
 export function getInstallCountByApp(appId: string): number {
-  return clientAppInstalls.filter(
+  return clientAppInstallStore.filter(
     (install) => install.appId === appId && install.enabled,
   ).length;
 }

@@ -7,7 +7,8 @@ import {
   getEffectiveConnectionStatusAsync,
   getInstalledAppsWithOverridesAsync,
 } from "@/src/lib/platform/effective-client";
-import { getClientById } from "@/src/lib/platform/mock-data";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
+import { clientAppHref } from "@/src/lib/platform/app-links";
 
 interface AdminClientDetailPageProps {
   params: Promise<{ id: string }>;
@@ -17,7 +18,7 @@ export default async function AdminClientDetailPage({
   params,
 }: AdminClientDetailPageProps) {
   const { id } = await params;
-  const client = getClientById(id);
+  const client = await getClientAccountById(id);
 
   if (!client) {
     notFound();
@@ -68,7 +69,11 @@ export default async function AdminClientDetailPage({
             <AppTile
               key={install.app.id}
               app={install.app}
-              href={install.enabled ? install.app.route : undefined}
+              href={
+                install.enabled
+                  ? clientAppHref(install.app, client.slug)
+                  : undefined
+              }
               badge={
                 install.enabled
                   ? `status: ${install.mappingStatus.replaceAll("_", " ")}`

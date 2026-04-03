@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && cross-env NEXT_PHASE=phase-production-build next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -17,17 +17,21 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "5.22.0",
+    "mermaid": "^11.14.0",
     "next": "16.2.2",
     "next-auth": "^5.0.0-beta.30",
+    "openai": "^6.33.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "prisma": "5.22.0",

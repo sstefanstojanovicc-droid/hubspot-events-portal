@@ -17,6 +17,7 @@ export function ClientAccountList({ clients }: ClientAccountListProps) {
               HubSpot portal ID
             </th>
             <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
+            <th className="px-4 py-3 text-left font-semibold text-slate-700">Workspace</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white">
@@ -34,6 +35,14 @@ export function ClientAccountList({ clients }: ClientAccountListProps) {
               <td className="px-4 py-3 text-slate-600">{client.hubspotPortalId}</td>
               <td className="px-4 py-3 text-slate-600">
                 {client.connectionStatus.replaceAll("_", " ")}
+              </td>
+              <td className="px-4 py-3">
+                <Link
+                  href={`/clients/${client.slug}`}
+                  className="text-sm font-medium text-hub-ink hover:underline"
+                >
+                  Open
+                </Link>
               </td>
             </tr>
           ))}

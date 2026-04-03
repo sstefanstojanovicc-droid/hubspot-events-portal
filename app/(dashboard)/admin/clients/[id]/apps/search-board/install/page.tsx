@@ -7,7 +7,7 @@ import {
   getEffectiveConnectionStatusAsync,
 } from "@/src/lib/platform/effective-client";
 import { ensureSearchBoardMappingHydrated } from "@/src/lib/search-board/search-board-hydration";
-import { getClientById } from "@/src/lib/platform/mock-data";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import { buildDryRunInstallPlan } from "@/src/lib/provisioning/provisioning-service";
 import { isHubSpotAccessTokenConfigured } from "@/src/lib/hubspot/env";
 
@@ -51,7 +51,7 @@ export default async function SearchBoardInstallPage({
   const notifyRaw = sp.notify;
   const notify = Array.isArray(notifyRaw) ? notifyRaw[0] : notifyRaw;
 
-  const client = getClientById(id);
+  const client = await getClientAccountById(id);
 
   if (!client) {
     notFound();

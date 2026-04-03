@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { OpenInHubSpotIconLink } from "@/src/components/hubspot/open-in-hubspot";
 import { CreateCandidateModal } from "@/src/components/search-board/create-candidate-modal";
 import { EmptyState, SummaryCard } from "@/src/components/search-board/primitives";
 import { getWorkspaceClientId } from "@/src/lib/auth/workspace-context";
+import { getClientAccountById } from "@/src/lib/platform/client-accounts-repo";
 import { loadDashboardStats, resolveSearchBoardTenant } from "@/src/lib/search-board/data";
 
 export default async function SearchBoardDashboardPage() {
@@ -34,7 +36,10 @@ export default async function SearchBoardDashboardPage() {
     );
   }
 
-  const stats = await loadDashboardStats(clientId);
+  const [stats, account] = await Promise.all([
+    loadDashboardStats(clientId),
+    getClientAccountById(clientId),
+  ]);
   if (!stats.ok) {
     const e = stats.error;
     return (
@@ -94,14 +99,24 @@ export default async function SearchBoardDashboardPage() {
         ) : (
           <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
             {recentShortlists.map((s) => (
-              <li key={s.id} className="flex items-center justify-between px-4 py-3">
+              <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div>
-                  <Link
-                    href={`/apps/search-board/shortlists/${s.id}`}
-                    className="font-medium text-slate-900 hover:text-hub-ink"
-                  >
-                    {String(s.properties.shortlist_name ?? "Shortlist")}
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Link
+                      href={`/apps/search-board/shortlists/${s.id}`}
+                      className="font-medium text-slate-900 hover:text-hub-ink"
+                    >
+                      {String(s.properties.shortlist_name ?? "Shortlist")}
+                    </Link>
+                    {account?.hubspotPortalId ? (
+                      <OpenInHubSpotIconLink
+                        portalId={account.hubspotPortalId}
+                        objectTypeId={gate.tenant.shortlistTypeId}
+                        recordId={s.id}
+                        title="Open shortlist in HubSpot"
+                      />
+                    ) : null}
+                  </div>
                   <p className="text-xs text-slate-500">
                     {String(s.properties.client_name ?? "")} ·{" "}
                     {String(s.properties.role_title ?? "")}
